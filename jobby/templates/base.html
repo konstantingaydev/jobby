@@ -30,8 +30,8 @@
       <div class="container">
         <a class="navbar-brand"
            href="{% url 'home.index' %}">
-          <!-- <img src="{% static 'img/logo.png' %}" alt="logo"
-               height="40" /> -->
+           <img src="{% static 'img/background.png' %}" alt="logo"
+               height="40" /> 
         </a>
         <button class="navbar-toggler" type="button"
                 data-bs-toggle="collapse"
@@ -47,7 +47,7 @@
             <a class="nav-link"
                href="{% url 'home.index' %}">Home</a>
             <a class="nav-link"
-               href="{% url 'home.index' %}">Jobs</a>
+               href="{% url 'jobs.index' %}">Jobs</a>
             <div class="vr bg-white mx-2 d-none
               d-lg-block"></div>
               {% if user.is_authenticated %}
