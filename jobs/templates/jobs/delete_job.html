@@ -1,0 +1,68 @@
+{% extends 'base.html' %}
+{% block content %}
+{% load static %}
+<div class="p-3">
+  <div class="container">
+    <div class="row mt-3">
+      <div class="col-12">
+        <nav aria-label="breadcrumb">
+          <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'jobs.index' %}">Jobs</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'jobs.my_jobs' %}">My Jobs</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Delete Job</li>
+          </ol>
+        </nav>
+      </div>
+    </div>
+    
+    <div class="row justify-content-center">
+      <div class="col-lg-6">
+        <div class="card border-danger">
+          <div class="card-header bg-danger text-white">
+            <h3 class="mb-0">
+              <i class="fas fa-exclamation-triangle"></i> Delete Job Posting
+            </h3>
+          </div>
+          <div class="card-body">
+            <div class="alert alert-warning">
+              <i class="fas fa-warning"></i>
+              <strong>Warning:</strong> This action cannot be undone. The job posting will be permanently deleted.
+            </div>
+            
+            <div class="mb-4">
+              <h5>Job Details:</h5>
+              <div class="card bg-light">
+                <div class="card-body">
+                  <h6 class="card-title">{{ template_data.job.title }}</h6>
+                  <p class="card-text text-muted mb-2">{{ template_data.job.company_name }}</p>
+                  <p class="card-text">
+                    <small class="text-muted">
+                      <i class="fas fa-map-marker-alt"></i> {{ template_data.job.location }}<br>
+                      <i class="fas fa-briefcase"></i> {{ template_data.job.get_employment_type_display }}<br>
+                      <i class="fas fa-chart-line"></i> {{ template_data.job.get_experience_level_display }}<br>
+                      <i class="fas fa-dollar-sign"></i> {{ template_data.job.salary_range }}<br>
+                      <i class="fas fa-clock"></i> Posted {{ template_data.job.created_at|date:"M d, Y" }}
+                    </small>
+                  </p>
+                </div>
+              </div>
+            </div>
+            
+            <form method="post">
+              {% csrf_token %}
+              <div class="d-flex justify-content-between">
+                <a href="{% url 'jobs.my_jobs' %}" class="btn btn-secondary">
+                  <i class="fas fa-arrow-left"></i> Cancel
+                </a>
+                <button type="submit" class="btn btn-danger">
+                  <i class="fas fa-trash"></i> Delete Job Posting
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock content %}
