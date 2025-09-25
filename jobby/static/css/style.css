@@ -1,14 +1,67 @@
-.bg-index{
-  background: url("/static/img/background.png") no-repeat
-    fixed;
-  background-size: 100% auto;
+body {
+  font-family: 'Poppins', sans-serif;
+  background-color: #F4F7F5; /* Light background color */
+  color: #333333; /* Dark charcoal for text */
 }
-.navbar a.nav-link {
-  color: #FFFEF6 !important;
+
+h1, h2, h3 {
+  font-weight: 600; /* Bolder headings */
 }
-.bg-dark {
-  background-color: #2E2E2E !important;
+.navbar-custom {
+  background-color: #2C5F2D; /* Primary green background */
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Subtle shadow for depth */
 }
+
+.navbar-custom .navbar-brand,
+.navbar-custom .nav-link {
+  color: #FFFFFF !important; /* White links for contrast */
+  transition: color 0.3s ease;
+}
+
+.navbar-custom .nav-link:hover {
+  color: #97BC62 !important; /* Accent green on hover */
+}
+
+/* --- Hero Section for the Homepage --- */
+.hero-section {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  padding: 100px 20px;
+  min-height: 70vh; /* Takes up a good portion of the screen height */
+}
+
+.hero-section h1 {
+  font-size: 3.5rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+}
+
+.hero-section .lead {
+  font-size: 1.25rem;
+  color: #555;
+  margin-bottom: 2rem;
+}
+
+/* --- Custom Button Styling --- */
+.btn-custom {
+  background-color: #2C5F2D;
+  color: #FFFFFF;
+  border: none;
+  padding: 12px 24px;
+  font-weight: 500;
+  border-radius: 5px;
+  transition: background-color 0.3s ease;
+}
+
+.btn-custom:hover {
+  background-color: #97BC62;
+  color: #FFFFFF;
+}
+
+/* --- Utility Classes (You can keep yours too) --- */
 .img-card-200 {
   width: fit-content;
   max-height: 200px;
