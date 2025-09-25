@@ -1,0 +1,52 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+  <h1>{{ template_data.title }}</h1>
+
+  <form method="get" class="mb-4">
+    <div class="mb-2">
+      <label for="skills">Skills (comma or space separated)</label>
+      <input type="text" name="skills" id="skills" class="form-control" value="{{ template_data.search_terms.skills }}">
+    </div>
+    <div class="mb-2">
+      <label for="location">Location</label>
+      <input type="text" name="location" id="location" class="form-control" value="{{ template_data.search_terms.location }}">
+    </div>
+    <div class="mb-2">
+      <label for="projects">Projects</label>
+      <input type="text" name="projects" id="projects" class="form-control" value="{{ template_data.search_terms.projects }}">
+    </div>
+    <button class="btn btn-primary">Search</button>
+  </form>
+
+  <h3>Results</h3>
+  {% if template_data.results %}
+    <div class="list-group">
+      {% for profile in template_data.results %}
+      <div class="list-group-item">
+        <h5>{{ profile.user.get_full_name|default:profile.user.username }}</h5>
+        <p><strong>Location:</strong> {{ profile.location }}</p>
+        <p><strong>Skills:</strong> {{ profile.skills }}</p>
+        <p><strong>Projects:</strong> {{ profile.projects }}</p>
+        <a href="mailto:{{ profile.user.email }}" class="btn btn-sm btn-outline-primary">Email</a>
+      </div>
+      {% endfor %}
+    </div>
+
+    <nav aria-label="Page navigation" class="mt-3">
+      <ul class="pagination">
+        {% if template_data.results.has_previous %}
+          <li class="page-item"><a class="page-link" href="?page={{ template_data.results.previous_page_number }}&skills={{ template_data.search_terms.skills }}&location={{ template_data.search_terms.location }}&projects={{ template_data.search_terms.projects }}">Previous</a></li>
+        {% endif %}
+        <li class="page-item disabled"><span class="page-link">Page {{ template_data.results.number }} of {{ template_data.results.paginator.num_pages }}</span></li>
+        {% if template_data.results.has_next %}
+          <li class="page-item"><a class="page-link" href="?page={{ template_data.results.next_page_number }}&skills={{ template_data.search_terms.skills }}&location={{ template_data.search_terms.location }}&projects={{ template_data.search_terms.projects }}">Next</a></li>
+        {% endif %}
+      </ul>
+    </nav>
+  {% else %}
+    <p>No candidates found.</p>
+  {% endif %}
+</div>
+{% endblock %}

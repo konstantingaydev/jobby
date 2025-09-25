@@ -4,6 +4,17 @@ from django.utils.safestring import mark_safe
 from django import forms
 from .models import Profile
 
+
+class ProfileForm(forms.ModelForm):
+    class Meta:
+        model = Profile
+        fields = ('skills', 'location', 'projects')
+        widgets = {
+            'skills': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
+            'location': forms.TextInput(attrs={'class': 'form-control'}),
+            'projects': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+        }
+
 class CustomErrorList(ErrorList):
     def __str__(self):
         if not self:

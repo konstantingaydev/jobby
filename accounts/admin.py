@@ -9,6 +9,7 @@ class ProfileInline(admin.StackedInline):
     model = Profile
     can_delete = False
     verbose_name_plural = 'profile'
+    fields = ('user_type', 'skills', 'location', 'projects')
 
 # Define a new User admin
 class CustomUserAdmin(BaseUserAdmin):

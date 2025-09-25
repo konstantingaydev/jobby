@@ -32,7 +32,12 @@
         
         <div class="vr bg-white mx-2 d-none d-lg-block"></div>
 
+        {% load profile_extras %}
         {% if user.is_authenticated %}
+          {% if user|has_profile and user.profile.user_type == 'recruiter' %}
+            <a class="nav-link" href="{% url 'accounts.recruiter_dashboard' %}">Dashboard</a>
+          {% endif %}
+          <a class="nav-link" href="{% url 'accounts.profile' %}">Profile</a>
           <a class="nav-link" href="{% url 'accounts.logout' %}">Logout ({{ user.username }})</a>
         {% else %}
           <a class="nav-link" href="{% url 'accounts.login' %}">Login</a>
