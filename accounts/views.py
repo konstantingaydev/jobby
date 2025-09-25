@@ -24,17 +24,21 @@ def login(request):
             return redirect('home.index')
 
 def signup(request):
-    template_data = {}
-    template_data['title'] = 'Sign Up'
-
-    if request.method == 'GET':
-        template_data['form'] = CustomUserCreationForm()
-        return render(request, 'accounts/signup.html', {'template_data': template_data})
-    elif request.method == 'POST':
-        form = CustomUserCreationForm(request.POST, error_class=CustomErrorList)
+    if request.method == 'POST':
+        form = CustomUserCreationForm(request.POST)
         if form.is_valid():
-            form.save()
-            return redirect('accounts.login')
-        else:
-            template_data['form'] = form
-            return render(request, 'accounts/signup.html', {'template_data': template_data})
+            user = form.save()
+            
+            user.profile.user_type = form.cleaned_data.get('user_type')
+            user.profile.save()
+            
+            auth_login(request, user)
+            return redirect('home.index') # Redirect to home
+    else:
+        form = CustomUserCreationForm()
+
+    context = {
+        'title': 'Sign Up',
+        'form': form
+    }
+    return render(request, 'accounts/signup.html', context)
