@@ -13,7 +13,7 @@ class CustomErrorList(ErrorList):
 class CustomUserCreationForm(UserCreationForm):
     # 1. Add the new field for selecting user type
     user_type = forms.ChoiceField(
-        choices=Profile.USER_TYPE_CHOICES,
+        choices= (('regular', 'Job Seeker'), ('recruiter', 'Recruiter')),
         widget=forms.RadioSelect, # Renders as radio buttons
         label="I am a:",
         required=True
