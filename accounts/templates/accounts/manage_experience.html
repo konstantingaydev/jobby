@@ -1,0 +1,170 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-lg-10 mx-auto">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0"><i class="fas fa-briefcase"></i> Manage Work Experience</h4>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        {{ formset.management_form }}
+                        
+                        <div id="experience-container">
+                            {% for form in formset %}
+                                <div class="experience-form border rounded p-3 mb-4">
+                                    {% if form.non_field_errors %}
+                                        <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+                                    {% endif %}
+                                    
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            <label for="{{ form.position.id_for_label }}" class="form-label">Job Title</label>
+                                            {{ form.position }}
+                                            {% if form.position.errors %}
+                                                <div class="text-danger">{{ form.position.errors }}</div>
+                                            {% endif %}
+                                        </div>
+                                        
+                                        <div class="col-md-6 mb-3">
+                                            <label for="{{ form.company.id_for_label }}" class="form-label">Company</label>
+                                            {{ form.company }}
+                                            {% if form.company.errors %}
+                                                <div class="text-danger">{{ form.company.errors }}</div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            <label for="{{ form.location.id_for_label }}" class="form-label">Location (Optional)</label>
+                                            {{ form.location }}
+                                            {% if form.location.errors %}
+                                                <div class="text-danger">{{ form.location.errors }}</div>
+                                            {% endif %}
+                                        </div>
+                                        
+                                        <div class="col-md-3 mb-3">
+                                            <div class="form-check mt-4">
+                                                {{ form.is_current }}
+                                                <label class="form-check-label" for="{{ form.is_current.id_for_label }}">
+                                                    Currently working here
+                                                </label>
+                                            </div>
+                                            {% if form.is_current.errors %}
+                                                <div class="text-danger">{{ form.is_current.errors }}</div>
+                                            {% endif %}
+                                        </div>
+                                        
+                                        <div class="col-md-3 mb-3 d-flex align-items-end">
+                                            {% if form.DELETE %}
+                                                <div class="form-check">
+                                                    {{ form.DELETE }}
+                                                    <label class="form-check-label text-danger" for="{{ form.DELETE.id_for_label }}">
+                                                        <i class="fas fa-trash"></i> Delete
+                                                    </label>
+                                                </div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            <label for="{{ form.start_date.id_for_label }}" class="form-label">Start Date</label>
+                                            {{ form.start_date }}
+                                            {% if form.start_date.errors %}
+                                                <div class="text-danger">{{ form.start_date.errors }}</div>
+                                            {% endif %}
+                                        </div>
+                                        
+                                        <div class="col-md-6 mb-3">
+                                            <label for="{{ form.end_date.id_for_label }}" class="form-label">End Date</label>
+                                            {{ form.end_date }}
+                                            <div class="form-text">Leave blank if currently working</div>
+                                            {% if form.end_date.errors %}
+                                                <div class="text-danger">{{ form.end_date.errors }}</div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label for="{{ form.description.id_for_label }}" class="form-label">Job Description</label>
+                                        {{ form.description }}
+                                        <div class="form-text">Describe your responsibilities, achievements, and key accomplishments in this role.</div>
+                                        {% if form.description.errors %}
+                                            <div class="text-danger">{{ form.description.errors }}</div>
+                                        {% endif %}
+                                    </div>
+                                    
+                                    {% for hidden in form.hidden_fields %}
+                                        {{ hidden }}
+                                    {% endfor %}
+                                </div>
+                            {% endfor %}
+                        </div>
+                        
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle"></i>
+                            <strong>Tip:</strong> Focus on your achievements and quantifiable results. Use action verbs and specific examples to showcase your impact.
+                        </div>
+                        
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'accounts.profile_detail' %}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left"></i> Back to Profile
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> Save Experience
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Handle delete checkboxes
+    const deleteCheckboxes = document.querySelectorAll('input[name$="-DELETE"]');
+    deleteCheckboxes.forEach(function(checkbox) {
+        checkbox.addEventListener('change', function() {
+            const experienceForm = this.closest('.experience-form');
+            if (this.checked) {
+                experienceForm.style.opacity = '0.5';
+                experienceForm.style.textDecoration = 'line-through';
+            } else {
+                experienceForm.style.opacity = '1';
+                experienceForm.style.textDecoration = 'none';
+            }
+        });
+    });
+    
+    // Handle current job checkbox
+    const currentCheckboxes = document.querySelectorAll('input[name$="-is_current"]');
+    currentCheckboxes.forEach(function(checkbox) {
+        const endDateField = checkbox.closest('.experience-form').querySelector('input[name$="-end_date"]');
+        
+        function toggleEndDate() {
+            if (checkbox.checked) {
+                endDateField.disabled = true;
+                endDateField.value = '';
+                endDateField.style.backgroundColor = '#f8f9fa';
+            } else {
+                endDateField.disabled = false;
+                endDateField.style.backgroundColor = '';
+            }
+        }
+        
+        // Initial state
+        toggleEndDate();
+        
+        // Handle changes
+        checkbox.addEventListener('change', toggleEndDate);
+    });
+});
+</script>
+{% endblock %}

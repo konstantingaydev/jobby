@@ -33,6 +33,9 @@
         <div class="vr bg-white mx-2 d-none d-lg-block"></div>
 
         {% if user.is_authenticated %}
+          {% if user.profile.user_type == 'regular' %}
+            <a class="nav-link" href="{% url 'accounts.profile_detail' %}">My Profile</a>
+          {% endif %}
           <a class="nav-link" href="{% url 'accounts.logout' %}">Logout ({{ user.username }})</a>
         {% else %}
           <a class="nav-link" href="{% url 'accounts.login' %}">Login</a>
