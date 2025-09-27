@@ -24,7 +24,7 @@ class Profile(models.Model):
     portfolio_url = models.URLField(blank=True, help_text="Personal website or portfolio URL")
     
     # Candidate-specific fields from job-posting branch
-    skills = models.TextField(blank=True, default='', help_text='Comma-separated list of skills')
+    skills_text = models.TextField(blank=True, default='', help_text='Comma-separated list of skills (simple version)')
     projects = models.TextField(blank=True, default='', help_text='Short description/list of projects')
     
     # Profile completion tracking

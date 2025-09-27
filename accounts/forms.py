@@ -8,9 +8,9 @@ from .models import Profile, Skill, Education, WorkExperience
 class ProfileForm(forms.ModelForm):
     class Meta:
         model = Profile
-        fields = ('skills', 'location', 'projects')
+        fields = ('skills_text', 'location', 'projects')
         widgets = {
-            'skills': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
+            'skills_text': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
             'location': forms.TextInput(attrs={'class': 'form-control'}),
             'projects': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
         }

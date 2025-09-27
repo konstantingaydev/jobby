@@ -245,7 +245,7 @@ def candidate_search(request):
     search_query = request.GET.get('search', '')
     if search_query:
         candidates = candidates.filter(
-            models.Q(skills__icontains=search_query) |
+            models.Q(skills_text__icontains=search_query) |
             models.Q(location__icontains=search_query) |
             models.Q(projects__icontains=search_query) |
             models.Q(user__first_name__icontains=search_query) |
