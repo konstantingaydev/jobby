@@ -27,7 +27,7 @@
       <div class="list-group-item">
         <h5>{{ profile.user.get_full_name|default:profile.user.username }}</h5>
         <p><strong>Location:</strong> {{ profile.location }}</p>
-        <p><strong>Skills:</strong> {{ profile.skills }}</p>
+        <p><strong>Skills:</strong> {{ profile.skills_text }}</p>
         <p><strong>Projects:</strong> {{ profile.projects }}</p>
         <a href="mailto:{{ profile.user.email }}" class="btn btn-sm btn-outline-primary">Email</a>
       </div>

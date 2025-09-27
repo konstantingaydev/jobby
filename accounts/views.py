@@ -241,8 +241,23 @@ def candidate_search(request):
     # Get all job seeker profiles
     candidates = Profile.objects.filter(user_type='regular')
     
-    # Filter by search query if provided
-    search_query = request.GET.get('search', '')
+    # Get search parameters
+    skills_query = request.GET.get('skills', '')
+    location_query = request.GET.get('location', '')
+    projects_query = request.GET.get('projects', '')
+    search_query = request.GET.get('search', '')  # Keep for general search
+    
+    # Apply filters
+    if skills_query:
+        candidates = candidates.filter(skills_text__icontains=skills_query)
+    
+    if location_query:
+        candidates = candidates.filter(location__icontains=location_query)
+    
+    if projects_query:
+        candidates = candidates.filter(projects__icontains=projects_query)
+    
+    # Filter by general search query if provided
     if search_query:
         candidates = candidates.filter(
             models.Q(skills_text__icontains=search_query) |
@@ -255,11 +270,22 @@ def candidate_search(request):
     # Pagination
     paginator = Paginator(candidates, 10)  # Show 10 candidates per page
     page_number = request.GET.get('page')
-    candidates = paginator.get_page(page_number)
+    candidates_page = paginator.get_page(page_number)
+    
+    # Structure data as expected by template
+    template_data = {
+        'title': 'Search Candidates',
+        'results': candidates_page,
+        'search_terms': {
+            'skills': skills_query,
+            'location': location_query,
+            'projects': projects_query,
+        }
+    }
     
     context = {
-        'template_data': {'title': 'Search Candidates'},
-        'candidates': candidates,
-        'search_query': search_query,
+        'template_data': template_data,
+        'candidates': candidates_page,  # Keep for backward compatibility
+        'search_query': search_query,   # Keep for backward compatibility
     }
     return render(request, 'accounts/candidate_search.html', context)
