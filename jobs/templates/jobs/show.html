@@ -4,17 +4,102 @@
 <div class="p-3">
   <div class="container">
     <div class="row mt-3">
-      <div class="col-md-6 mx-auto mb-3">
-        <h2>{{ template_data.job.name }}</h2>
-        <hr />
-        <p><b>Description:</b> {{
-          template_data.job.description }}</p>
-        <p><b>Price:</b> ${{
-          template_data.job.price }}</p>
+      <div class="col-12">
+        <nav aria-label="breadcrumb">
+          <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'jobs.index' %}">Jobs</a></li>
+            <li class="breadcrumb-item active" aria-current="page">{{ template_data.job.title }}</li>
+          </ol>
+        </nav>
       </div>
-      <div class="col-md-6 mx-auto mb-3 text-center">
-        <img src="{{ template_data.job.image.url }}"
-          class="rounded img-card-400" />
+    </div>
+    
+    <div class="row">
+      <div class="col-lg-8">
+        <div class="card">
+          <div class="card-body">
+            <div class="d-flex justify-content-between align-items-start mb-3">
+              <div>
+                <h1 class="card-title mb-1">{{ template_data.job.title }}</h1>
+                <h4 class="text-muted mb-3">{{ template_data.job.company_name }}</h4>
+              </div>
+              {% if user.is_authenticated and user == template_data.job.posted_by %}
+                <div class="btn-group">
+                  <a href="{% url 'jobs.edit' id=template_data.job.id %}" class="btn btn-outline-primary btn-sm">Edit</a>
+                  <a href="{% url 'jobs.delete' id=template_data.job.id %}" class="btn btn-outline-danger btn-sm">Delete</a>
+                </div>
+              {% endif %}
+            </div>
+            
+            <div class="row mb-4">
+              <div class="col-md-6">
+                <p class="mb-2">
+                  <i class="fas fa-map-marker-alt text-primary"></i>
+                  <strong>Location:</strong> {{ template_data.job.location }}
+                </p>
+                <p class="mb-2">
+                  <i class="fas fa-briefcase text-primary"></i>
+                  <strong>Type:</strong> {{ template_data.job.get_employment_type_display }}
+                </p>
+              </div>
+              <div class="col-md-6">
+                <p class="mb-2">
+                  <i class="fas fa-chart-line text-primary"></i>
+                  <strong>Level:</strong> {{ template_data.job.get_experience_level_display }}
+                </p>
+                <p class="mb-2">
+                  <i class="fas fa-dollar-sign text-primary"></i>
+                  <strong>Salary:</strong> {{ template_data.job.salary_range }}
+                </p>
+              </div>
+            </div>
+            
+            <div class="mb-4">
+              <h5>Job Description</h5>
+              <p class="text-muted">{{ template_data.job.description|linebreaks }}</p>
+            </div>
+            
+            <div class="mb-4">
+              <h5>Requirements</h5>
+              <p class="text-muted">{{ template_data.job.requirements|linebreaks }}</p>
+            </div>
+            
+            {% if template_data.job.benefits %}
+            <div class="mb-4">
+              <h5>Benefits & Perks</h5>
+              <p class="text-muted">{{ template_data.job.benefits|linebreaks }}</p>
+            </div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      
+      <div class="col-lg-4">
+        <div class="card">
+          <div class="card-body text-center">
+            {% if template_data.job.image %}
+              <img src="{{ template_data.job.image.url }}" class="img-fluid rounded mb-3" style="max-height: 200px;">
+            {% else %}
+              <div class="bg-light rounded mb-3 d-flex align-items-center justify-content-center" style="height: 200px;">
+                <i class="fas fa-building fa-3x text-muted"></i>
+              </div>
+            {% endif %}
+            
+            <h5>{{ template_data.job.company_name }}</h5>
+            <p class="text-muted mb-3">Posted by {{ template_data.job.posted_by.get_full_name|default:template_data.job.posted_by.username }}</p>
+            
+            <div class="d-grid gap-2">
+              <button class="btn btn-primary btn-lg">Apply Now</button>
+              <button class="btn btn-outline-secondary">Save Job</button>
+            </div>
+            
+            <hr>
+            <small class="text-muted">
+              <i class="fas fa-clock"></i> Posted {{ template_data.job.created_at|timesince }} ago<br>
+              <i class="fas fa-edit"></i> Updated {{ template_data.job.updated_at|timesince }} ago
+            </small>
+          </div>
+        </div>
       </div>
     </div>
   </div>

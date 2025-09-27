@@ -1,0 +1,11 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container mt-4">
+  <h1>{{ template_data.title }}</h1>
+  <p><strong>Username:</strong> {{ template_data.profile.user.username }}</p>
+  <p><strong>User type:</strong> {{ template_data.profile.get_user_type_display }}</p>
+  <p><strong>Location:</strong> {{ template_data.profile.location }}</p>
+  <p><strong>Skills:</strong> {{ template_data.profile.skills }}</p>
+  <p><strong>Projects:</strong> {{ template_data.profile.projects }}</p>
+</div>
+{% endblock %}

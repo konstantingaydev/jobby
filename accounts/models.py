@@ -16,12 +16,16 @@ class Profile(models.Model):
     headline = models.CharField(max_length=200, blank=True, help_text="Professional headline or title")
     bio = models.TextField(blank=True, help_text="Brief professional summary")
     phone = models.CharField(max_length=20, blank=True)
-    location = models.CharField(max_length=100, blank=True)
+    location = models.CharField(max_length=255, blank=True, help_text='Candidate location')
     
     # Links
     linkedin_url = models.URLField(blank=True, help_text="LinkedIn profile URL")
     github_url = models.URLField(blank=True, help_text="GitHub profile URL")
     portfolio_url = models.URLField(blank=True, help_text="Personal website or portfolio URL")
+    
+    # Candidate-specific fields from job-posting branch
+    skills = models.TextField(blank=True, default='', help_text='Comma-separated list of skills')
+    projects = models.TextField(blank=True, default='', help_text='Short description/list of projects')
     
     # Profile completion tracking
     created_at = models.DateTimeField(auto_now_add=True)
@@ -47,7 +51,6 @@ class Profile(models.Model):
     show_education = models.BooleanField(default=True, help_text="Show education section")
     show_experience = models.BooleanField(default=True, help_text="Show work experience section")
     show_links = models.BooleanField(default=True, help_text="Show social/portfolio links")
-    
     def __str__(self):
         return f'{self.user.username} Profile - {self.get_user_type_display()}'
     

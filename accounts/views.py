@@ -1,12 +1,14 @@
-from django.shortcuts import render, get_object_or_404
+from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth import login as auth_login, authenticate, logout as auth_logout
-from .forms import CustomUserCreationForm, CustomErrorList, ProfileForm, SkillForm, EducationForm, WorkExperienceForm, PrivacySettingsForm
-from django.shortcuts import redirect
+from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from .models import Profile, Skill, Education, WorkExperience
 from django.forms import modelformset_factory
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponseRedirect
+from django.core.paginator import Paginator
+from django.db import models
+from .forms import CustomUserCreationForm, CustomErrorList, ProfileForm, SkillForm, EducationForm, WorkExperienceForm, PrivacySettingsForm
+from .models import Profile, Skill, Education, WorkExperience
 
 @login_required
 def logout(request):
@@ -215,3 +217,49 @@ def privacy_settings(request):
         'profile': profile,
     }
     return render(request, 'accounts/privacy_settings.html', context)
+
+
+# Recruiter Dashboard Functions (from job-posting branch)
+@login_required
+def recruiter_dashboard(request):
+    """Dashboard view for recruiters."""
+    if not hasattr(request.user, 'profile') or request.user.profile.user_type != 'recruiter':
+        messages.error(request, 'Access denied. Recruiter account required.')
+        return redirect('home.index')
+    
+    template_data = {'title': 'Recruiter Dashboard'}
+    return render(request, 'accounts/recruiter_dashboard.html', {'template_data': template_data})
+
+
+@login_required  
+def candidate_search(request):
+    """Search view for recruiters to find candidates."""
+    if not hasattr(request.user, 'profile') or request.user.profile.user_type != 'recruiter':
+        messages.error(request, 'Access denied. Recruiter account required.')
+        return redirect('home.index')
+        
+    # Get all job seeker profiles
+    candidates = Profile.objects.filter(user_type='regular')
+    
+    # Filter by search query if provided
+    search_query = request.GET.get('search', '')
+    if search_query:
+        candidates = candidates.filter(
+            models.Q(skills__icontains=search_query) |
+            models.Q(location__icontains=search_query) |
+            models.Q(projects__icontains=search_query) |
+            models.Q(user__first_name__icontains=search_query) |
+            models.Q(user__last_name__icontains=search_query)
+        )
+    
+    # Pagination
+    paginator = Paginator(candidates, 10)  # Show 10 candidates per page
+    page_number = request.GET.get('page')
+    candidates = paginator.get_page(page_number)
+    
+    context = {
+        'template_data': {'title': 'Search Candidates'},
+        'candidates': candidates,
+        'search_query': search_query,
+    }
+    return render(request, 'accounts/candidate_search.html', context)

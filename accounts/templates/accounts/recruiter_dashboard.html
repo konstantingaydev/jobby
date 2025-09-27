@@ -1,0 +1,13 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+  <h1>{{ template_data.title }}</h1>
+  <p>Welcome to the recruiter dashboard. Use the links below to manage jobs and search candidates.</p>
+  <ul>
+    <li><a href="{% url 'jobs.my_jobs' %}">My Job Postings</a></li>
+    <li><a href="{% url 'jobs.create' %}">Post a New Job</a></li>
+    <li><a href="{% url 'accounts.candidate_search' %}">Search Candidates</a></li>
+  </ul>
+</div>
+{% endblock %}
