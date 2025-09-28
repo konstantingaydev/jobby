@@ -7,7 +7,8 @@ class JobForm(forms.ModelForm):
         fields = [
             'title', 'company_name', 'location', 'salary_min', 'salary_max',
             'employment_type', 'experience_level', 'description', 'requirements',
-            'benefits', 'image', 'is_active'
+            'skills_required', 'benefits', 'is_remote', 'visa_sponsorship', 
+            'image', 'is_active'
         ]
         widgets = {
             'title': forms.TextInput(attrs={
@@ -46,10 +47,20 @@ class JobForm(forms.ModelForm):
                 'rows': 4,
                 'placeholder': 'List required skills, qualifications, and experience...'
             }),
+            'skills_required': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Python, JavaScript, React, SQL, etc.'
+            }),
             'benefits': forms.Textarea(attrs={
                 'class': 'form-control',
                 'rows': 3,
                 'placeholder': 'List benefits, perks, and what makes this opportunity attractive...'
+            }),
+            'is_remote': forms.CheckboxInput(attrs={
+                'class': 'form-check-input'
+            }),
+            'visa_sponsorship': forms.CheckboxInput(attrs={
+                'class': 'form-check-input'
             }),
             'image': forms.FileInput(attrs={
                 'class': 'form-control',
@@ -69,18 +80,115 @@ class JobForm(forms.ModelForm):
             'experience_level': 'Experience Level',
             'description': 'Job Description',
             'requirements': 'Requirements',
+            'skills_required': 'Required Skills',
             'benefits': 'Benefits & Perks',
+            'is_remote': 'Remote Position',
+            'visa_sponsorship': 'Visa Sponsorship Available',
             'image': 'Company Logo/Image',
             'is_active': 'Active Job Posting'
         }
         help_texts = {
             'salary_min': 'Leave blank if not specified',
             'salary_max': 'Leave blank if not specified',
+            'skills_required': 'Comma-separated list of required skills',
             'benefits': 'Optional - describe benefits and perks',
+            'is_remote': 'Check if this is a remote position',
+            'visa_sponsorship': 'Check if visa sponsorship is available',
             'image': 'Optional - upload a company logo or relevant image',
             'is_active': 'Uncheck to temporarily hide this job posting'
         }
 
+    def clean(self):
+        cleaned_data = super().clean()
+        salary_min = cleaned_data.get('salary_min')
+        salary_max = cleaned_data.get('salary_max')
+        
+        if salary_min and salary_max and salary_min > salary_max:
+            raise forms.ValidationError("Minimum salary cannot be greater than maximum salary.")
+        
+        return cleaned_data
+
+
+class JobSearchForm(forms.Form):
+    """Advanced search form for job seekers"""
+    
+    search = forms.CharField(
+        max_length=255,
+        required=False,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Job title, company, or keywords...'
+        }),
+        label='Search'
+    )
+    
+    skills = forms.CharField(
+        max_length=500,
+        required=False,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Python, JavaScript, React, etc.'
+        }),
+        label='Skills',
+        help_text='Comma-separated skills'
+    )
+    
+    location = forms.CharField(
+        max_length=255,
+        required=False,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'City, State, or "Remote"'
+        }),
+        label='Location'
+    )
+    
+    employment_type = forms.ChoiceField(
+        choices=[('', 'All Types')] + Job.EMPLOYMENT_TYPE_CHOICES,
+        required=False,
+        widget=forms.Select(attrs={'class': 'form-select'}),
+        label='Employment Type'
+    )
+    
+    experience_level = forms.ChoiceField(
+        choices=[('', 'All Levels')] + Job.EXPERIENCE_LEVEL_CHOICES,
+        required=False,
+        widget=forms.Select(attrs={'class': 'form-select'}),
+        label='Experience Level'
+    )
+    
+    salary_min = forms.IntegerField(
+        required=False,
+        widget=forms.NumberInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'e.g., 50000'
+        }),
+        label='Minimum Salary ($)',
+        min_value=0
+    )
+    
+    salary_max = forms.IntegerField(
+        required=False,
+        widget=forms.NumberInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'e.g., 100000'
+        }),
+        label='Maximum Salary ($)',
+        min_value=0
+    )
+    
+    is_remote = forms.BooleanField(
+        required=False,
+        widget=forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+        label='Remote work only'
+    )
+    
+    visa_sponsorship = forms.BooleanField(
+        required=False,
+        widget=forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+        label='Visa sponsorship available'
+    )
+    
     def clean(self):
         cleaned_data = super().clean()
         salary_min = cleaned_data.get('salary_min')

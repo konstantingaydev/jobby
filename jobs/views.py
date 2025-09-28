@@ -6,33 +6,68 @@ from django.db.models import Q
 from django.http import HttpResponseForbidden
 
 from .models import Job
-from .forms import JobForm
+from .forms import JobForm, JobSearchForm
 from accounts.models import Profile
 
 def index(request):
-    """Display all job postings with filtering capabilities"""
+    """Display all job postings with enhanced search and filtering capabilities"""
     jobs = Job.objects.filter(is_active=True)
     
-    # Get filter parameters
-    search_term = request.GET.get('search', '')
-    employment_type = request.GET.get('employment_type', '')
-    experience_level = request.GET.get('experience_level', '')
+    # Initialize search form with GET data
+    search_form = JobSearchForm(request.GET or None)
     
-    # Apply search filter
-    if search_term:
-        jobs = jobs.filter(
-            Q(title__icontains=search_term) |
-            Q(company_name__icontains=search_term) |
-            Q(description__icontains=search_term)
-        )
-    
-    # Apply employment type filter
-    if employment_type:
-        jobs = jobs.filter(employment_type=employment_type)
-    
-    # Apply experience level filter
-    if experience_level:
-        jobs = jobs.filter(experience_level=experience_level)
+    if search_form.is_valid():
+        # Get clean search parameters
+        search_term = search_form.cleaned_data.get('search', '')
+        skills = search_form.cleaned_data.get('skills', '')
+        location = search_form.cleaned_data.get('location', '')
+        employment_type = search_form.cleaned_data.get('employment_type', '')
+        experience_level = search_form.cleaned_data.get('experience_level', '')
+        salary_min = search_form.cleaned_data.get('salary_min')
+        salary_max = search_form.cleaned_data.get('salary_max')
+        is_remote = search_form.cleaned_data.get('is_remote', False)
+        visa_sponsorship = search_form.cleaned_data.get('visa_sponsorship', False)
+        
+        # Apply filters
+        if search_term:
+            jobs = jobs.filter(
+                Q(title__icontains=search_term) |
+                Q(company_name__icontains=search_term) |
+                Q(description__icontains=search_term) |
+                Q(requirements__icontains=search_term)
+            )
+        
+        if skills:
+            # Split skills and search for any of them
+            skill_list = [skill.strip() for skill in skills.split(',') if skill.strip()]
+            skill_query = Q()
+            for skill in skill_list:
+                skill_query |= Q(skills_required__icontains=skill)
+            jobs = jobs.filter(skill_query)
+        
+        if location:
+            jobs = jobs.filter(
+                Q(location__icontains=location) |
+                Q(is_remote=True) if location.lower() == 'remote' else Q()
+            )
+        
+        if employment_type:
+            jobs = jobs.filter(employment_type=employment_type)
+        
+        if experience_level:
+            jobs = jobs.filter(experience_level=experience_level)
+        
+        if salary_min:
+            jobs = jobs.filter(Q(salary_min__gte=salary_min) | Q(salary_max__gte=salary_min))
+        
+        if salary_max:
+            jobs = jobs.filter(Q(salary_max__lte=salary_max) | Q(salary_min__lte=salary_max))
+        
+        if is_remote:
+            jobs = jobs.filter(is_remote=True)
+        
+        if visa_sponsorship:
+            jobs = jobs.filter(visa_sponsorship=True)
     
     # Order by most recent
     jobs = jobs.order_by('-created_at')
@@ -45,11 +80,8 @@ def index(request):
     # Structure data as expected by template
     template_data = {
         'jobs': jobs_page,
-        'current_search': search_term,
-        'current_employment_type': employment_type,
-        'current_experience_level': experience_level,
-        'employment_types': Job.EMPLOYMENT_TYPE_CHOICES,
-        'experience_levels': Job.EXPERIENCE_LEVEL_CHOICES,
+        'search_form': search_form,
+        'total_jobs': jobs.count(),
     }
     
     context = {

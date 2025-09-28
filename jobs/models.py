@@ -8,7 +8,7 @@ class Job(models.Model):
         ('part-time', 'Part Time'),
         ('contract', 'Contract'),
         ('internship', 'Internship'),
-        ('remote', 'Remote'),
+        ('freelance', 'Freelance'),
     ]
     
     EXPERIENCE_LEVEL_CHOICES = [
@@ -30,6 +30,11 @@ class Job(models.Model):
     requirements = models.TextField(help_text="Required skills and qualifications", default="")
     benefits = models.TextField(blank=True, help_text="Benefits and perks")
     image = models.ImageField(upload_to='job_images/', null=True, blank=True)
+    
+    # Enhanced search fields
+    skills_required = models.TextField(blank=True, help_text="Required skills (comma-separated)")
+    is_remote = models.BooleanField(default=False, help_text="Is this a remote position?")
+    visa_sponsorship = models.BooleanField(default=False, help_text="Does this job offer visa sponsorship?")
     
     # Recruiter information
     posted_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name='posted_jobs')
@@ -54,3 +59,10 @@ class Job(models.Model):
         elif self.salary_max:
             return f"Up to ${self.salary_max:,}"
         return "Salary not specified"
+    
+    @property
+    def skills_list(self):
+        """Return skills as a list"""
+        if self.skills_required:
+            return [skill.strip() for skill in self.skills_required.split(',') if skill.strip()]
+        return []

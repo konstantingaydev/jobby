@@ -17,44 +17,91 @@
         </div>
         <hr />
         
-        <!-- Search and Filter Form -->
-        <form method="GET" class="mb-4">
-          <div class="row g-3">
-            <div class="col-md-4">
-              <div class="input-group">
-                <span class="input-group-text">Search</span>
-                <input type="text" class="form-control" name="search" 
-                       value="{{ template_data.current_search }}" 
-                       placeholder="Job title, company...">
-              </div>
-            </div>
-            <div class="col-md-3">
-              <select name="employment_type" class="form-select">
-                <option value="">All Types</option>
-                {% for value, label in template_data.employment_types %}
-                  <option value="{{ value }}" 
-                          {% if template_data.current_employment_type == value %}selected{% endif %}>
-                    {{ label }}
-                  </option>
-                {% endfor %}
-              </select>
-            </div>
-            <div class="col-md-3">
-              <select name="experience_level" class="form-select">
-                <option value="">All Levels</option>
-                {% for value, label in template_data.experience_levels %}
-                  <option value="{{ value }}" 
-                          {% if template_data.current_experience_level == value %}selected{% endif %}>
-                    {{ label }}
-                  </option>
-                {% endfor %}
-              </select>
-            </div>
-            <div class="col-md-2">
-              <button class="btn btn-dark w-100" type="submit">Filter</button>
+        <!-- Enhanced Search and Filter Form -->
+        <div class="card mb-4">
+          <div class="card-header">
+            <h5 class="mb-0">
+              <button class="btn btn-link text-decoration-none" type="button" data-bs-toggle="collapse" data-bs-target="#searchFilters">
+                <i class="fas fa-search"></i> Search & Filter Jobs
+                <span class="badge bg-primary ms-2">{{ template_data.total_jobs }} found</span>
+              </button>
+            </h5>
+          </div>
+          <div class="collapse show" id="searchFilters">
+            <div class="card-body">
+              <form method="GET">
+                <div class="row g-3">
+                  <!-- Basic Search -->
+                  <div class="col-md-6">
+                    {{ template_data.search_form.search.label_tag }}
+                    {{ template_data.search_form.search }}
+                  </div>
+                  
+                  <!-- Skills -->
+                  <div class="col-md-6">
+                    {{ template_data.search_form.skills.label_tag }}
+                    {{ template_data.search_form.skills }}
+                    <small class="form-text text-muted">{{ template_data.search_form.skills.help_text }}</small>
+                  </div>
+                  
+                  <!-- Location -->
+                  <div class="col-md-4">
+                    {{ template_data.search_form.location.label_tag }}
+                    {{ template_data.search_form.location }}
+                  </div>
+                  
+                  <!-- Employment Type -->
+                  <div class="col-md-4">
+                    {{ template_data.search_form.employment_type.label_tag }}
+                    {{ template_data.search_form.employment_type }}
+                  </div>
+                  
+                  <!-- Experience Level -->
+                  <div class="col-md-4">
+                    {{ template_data.search_form.experience_level.label_tag }}
+                    {{ template_data.search_form.experience_level }}
+                  </div>
+                  
+                  <!-- Salary Range -->
+                  <div class="col-md-3">
+                    {{ template_data.search_form.salary_min.label_tag }}
+                    {{ template_data.search_form.salary_min }}
+                  </div>
+                  <div class="col-md-3">
+                    {{ template_data.search_form.salary_max.label_tag }}
+                    {{ template_data.search_form.salary_max }}
+                  </div>
+                  
+                  <!-- Checkboxes -->
+                  <div class="col-md-3">
+                    <div class="form-check mt-4">
+                      {{ template_data.search_form.is_remote }}
+                      {{ template_data.search_form.is_remote.label_tag }}
+                    </div>
+                  </div>
+                  <div class="col-md-3">
+                    <div class="form-check mt-4">
+                      {{ template_data.search_form.visa_sponsorship }}
+                      {{ template_data.search_form.visa_sponsorship.label_tag }}
+                    </div>
+                  </div>
+                  
+                  <!-- Action Buttons -->
+                  <div class="col-12">
+                    <div class="d-flex gap-2">
+                      <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-search"></i> Search Jobs
+                      </button>
+                      <a href="{% url 'jobs.index' %}" class="btn btn-outline-secondary">
+                        <i class="fas fa-times"></i> Clear Filters
+                      </a>
+                    </div>
+                  </div>
+                </div>
+              </form>
             </div>
           </div>
-        </form>
+        </div>
       </div>
     </div>
     
@@ -75,12 +122,21 @@
             <p class="card-text text-muted mb-2">{{ job.company_name }}</p>
             <p class="card-text">
               <small class="text-muted">
-                <i class="fas fa-map-marker-alt"></i> {{ job.location }}<br>
+                <i class="fas fa-map-marker-alt"></i> {{ job.location }}
+                {% if job.is_remote %}<span class="badge bg-success ms-1">Remote</span>{% endif %}<br>
                 <i class="fas fa-briefcase"></i> {{ job.get_employment_type_display }}<br>
                 <i class="fas fa-chart-line"></i> {{ job.get_experience_level_display }}<br>
                 <i class="fas fa-dollar-sign"></i> {{ job.salary_range }}
+                {% if job.visa_sponsorship %}<br><i class="fas fa-passport"></i> Visa sponsorship available{% endif %}
               </small>
             </p>
+            {% if job.skills_required %}
+            <div class="mb-2">
+              {% for skill in job.skills_list %}
+                <span class="badge bg-light text-dark me-1">{{ skill }}</span>
+              {% endfor %}
+            </div>
+            {% endif %}
             <p class="card-text flex-grow-1">{{ job.description|truncatewords:20 }}</p>
             <div class="mt-auto">
               <a href="{% url 'jobs.show' id=job.id %}" class="btn btn-primary w-100">View Details</a>
