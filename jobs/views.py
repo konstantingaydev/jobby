@@ -38,18 +38,22 @@ def index(request):
             )
         
         if skills:
-            # Split skills and search for any of them
+            # Split skills and search for any of them in both skills_required and requirements fields
             skill_list = [skill.strip() for skill in skills.split(',') if skill.strip()]
             skill_query = Q()
             for skill in skill_list:
-                skill_query |= Q(skills_required__icontains=skill)
+                skill_query |= (
+                    Q(skills_required__icontains=skill) |
+                    Q(requirements__icontains=skill)
+                )
             jobs = jobs.filter(skill_query)
         
         if location:
-            jobs = jobs.filter(
-                Q(location__icontains=location) |
-                Q(is_remote=True) if location.lower() == 'remote' else Q()
-            )
+            # Enhanced location search
+            location_query = Q(location__icontains=location)
+            if location.lower() in ['remote', 'work from home', 'wfh']:
+                location_query |= Q(is_remote=True)
+            jobs = jobs.filter(location_query)
         
         if employment_type:
             jobs = jobs.filter(employment_type=employment_type)
