@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.contrib.auth.models import User
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
-from .models import Profile, Skill, Education, WorkExperience
+from .models import Profile, Skill, Education, WorkExperience, Project
 
 # Define an inline admin descriptor for the Profile model
 # which acts a bit like a singleton
@@ -9,7 +9,7 @@ class ProfileInline(admin.StackedInline):
     model = Profile
     can_delete = False
     verbose_name_plural = 'profile'
-    fields = ('user_type', 'skills', 'location', 'projects')
+    fields = ('user_type', 'headline', 'bio', 'location', 'skills_text', 'projects_text')
 
 # Define a new User admin
 class CustomUserAdmin(BaseUserAdmin):
@@ -46,3 +46,9 @@ class WorkExperienceAdmin(admin.ModelAdmin):
     list_display = ('position', 'company', 'profile', 'start_date', 'end_date', 'is_current')
     list_filter = ('is_current', 'start_date')
     search_fields = ('position', 'company', 'profile__user__username')
+
+@admin.register(Project)
+class ProjectAdmin(admin.ModelAdmin):
+    list_display = ('title', 'profile', 'start_date', 'end_date', 'is_featured')
+    list_filter = ('is_featured', 'start_date')
+    search_fields = ('title', 'description', 'technologies', 'profile__user__username')

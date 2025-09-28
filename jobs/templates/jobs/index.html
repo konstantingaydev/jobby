@@ -161,7 +161,7 @@
       <ul class="pagination justify-content-center">
         {% if template_data.jobs.has_previous %}
           <li class="page-item">
-            <a class="page-link" href="?page={{ template_data.jobs.previous_page_number }}{% if template_data.current_search %}&search={{ template_data.current_search }}{% endif %}{% if template_data.current_employment_type %}&employment_type={{ template_data.current_employment_type }}{% endif %}{% if template_data.current_experience_level %}&experience_level={{ template_data.current_experience_level }}{% endif %}">Previous</a>
+            <a class="page-link" href="?page={{ template_data.jobs.previous_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">Previous</a>
           </li>
         {% endif %}
         
@@ -172,14 +172,14 @@
             </li>
           {% elif num > template_data.jobs.number|add:'-3' and num < template_data.jobs.number|add:'3' %}
             <li class="page-item">
-              <a class="page-link" href="?page={{ num }}{% if template_data.current_search %}&search={{ template_data.current_search }}{% endif %}{% if template_data.current_employment_type %}&employment_type={{ template_data.current_employment_type }}{% endif %}{% if template_data.current_experience_level %}&experience_level={{ template_data.current_experience_level }}{% endif %}">{{ num }}</a>
+              <a class="page-link" href="?page={{ num }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">{{ num }}</a>
             </li>
           {% endif %}
         {% endfor %}
         
         {% if template_data.jobs.has_next %}
           <li class="page-item">
-            <a class="page-link" href="?page={{ template_data.jobs.next_page_number }}{% if template_data.current_search %}&search={{ template_data.current_search }}{% endif %}{% if template_data.current_employment_type %}&employment_type={{ template_data.current_employment_type }}{% endif %}{% if template_data.current_experience_level %}&experience_level={{ template_data.current_experience_level }}{% endif %}">Next</a>
+            <a class="page-link" href="?page={{ template_data.jobs.next_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">Next</a>
           </li>
         {% endif %}
       </ul>

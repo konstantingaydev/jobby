@@ -2,18 +2,7 @@ from django.contrib.auth.forms import UserCreationForm
 from django.forms.utils import ErrorList
 from django.utils.safestring import mark_safe
 from django import forms
-from .models import Profile, Skill, Education, WorkExperience
-
-
-class ProfileForm(forms.ModelForm):
-    class Meta:
-        model = Profile
-        fields = ('skills_text', 'location', 'projects')
-        widgets = {
-            'skills_text': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
-            'location': forms.TextInput(attrs={'class': 'form-control'}),
-            'projects': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
-        }
+from .models import Profile, Skill, Education, WorkExperience, Project
 
 class CustomErrorList(ErrorList):
     def __str__(self):
@@ -89,6 +78,24 @@ class WorkExperienceForm(forms.ModelForm):
             'end_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
             'is_current': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
             'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 4, 'placeholder': 'Describe your responsibilities and achievements...'}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['end_date'].required = False
+
+class ProjectForm(forms.ModelForm):
+    class Meta:
+        model = Project
+        fields = ['title', 'description', 'technologies', 'start_date', 'end_date', 'project_url', 'is_featured']
+        widgets = {
+            'title': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Project Name'}),
+            'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 4, 'placeholder': 'Describe the project and your role...'}),
+            'technologies': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Python, React, PostgreSQL, etc.'}),
+            'start_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'end_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'project_url': forms.URLInput(attrs={'class': 'form-control', 'placeholder': 'https://github.com/username/project'}),
+            'is_featured': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
         }
 
     def __init__(self, *args, **kwargs):

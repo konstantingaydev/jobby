@@ -25,7 +25,7 @@ class Profile(models.Model):
     
     # Candidate-specific fields from job-posting branch
     skills_text = models.TextField(blank=True, default='', help_text='Comma-separated list of skills (simple version)')
-    projects = models.TextField(blank=True, default='', help_text='Short description/list of projects')
+    projects_text = models.TextField(blank=True, default='', help_text='Short description/list of projects')
     
     # Profile completion tracking
     created_at = models.DateTimeField(auto_now_add=True)
@@ -104,3 +104,26 @@ class WorkExperience(models.Model):
     
     def __str__(self):
         return f"{self.position} at {self.company}"
+
+class Project(models.Model):
+    profile = models.ForeignKey(Profile, on_delete=models.CASCADE, related_name='projects')
+    title = models.CharField(max_length=200)
+    description = models.TextField(help_text="Describe the project and your role")
+    technologies = models.CharField(max_length=500, blank=True, help_text="Technologies used (comma-separated)")
+    start_date = models.DateField()
+    end_date = models.DateField(null=True, blank=True, help_text="Leave blank if ongoing")
+    project_url = models.URLField(blank=True, help_text="Link to project (GitHub, live demo, etc.)")
+    is_featured = models.BooleanField(default=False, help_text="Feature this project on profile")
+    
+    class Meta:
+        ordering = ['-is_featured', '-end_date', '-start_date']
+    
+    def __str__(self):
+        return self.title
+    
+    @property
+    def technologies_list(self):
+        """Return technologies as a list"""
+        if self.technologies:
+            return [tech.strip() for tech in self.technologies.split(',') if tech.strip()]
+        return []
