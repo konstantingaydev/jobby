@@ -16,5 +16,6 @@ urlpatterns = [
     path('profile/skills/', views.manage_skills, name='accounts.manage_skills'),
     path('profile/education/', views.manage_education, name='accounts.manage_education'),
     path('profile/experience/', views.manage_experience, name='accounts.manage_experience'),
+    path('profile/projects/', views.manage_projects, name='accounts.manage_projects'),
     path('profile/privacy/', views.privacy_settings, name='accounts.privacy_settings'),
 ]

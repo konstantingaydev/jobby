@@ -201,20 +201,6 @@
                 {% endif %}
               </div>
               
-              <div class="mb-3">
-                <label for="{{ template_data.form.skills_required.id_for_label }}" class="form-label">
-                  {{ template_data.form.skills_required.label }}
-                </label>
-                {{ template_data.form.skills_required }}
-                {% if template_data.form.skills_required.errors %}
-                  <div class="text-danger small mt-1">
-                    {% for error in template_data.form.skills_required.errors %}
-                      <div>{{ error }}</div>
-                    {% endfor %}
-                  </div>
-                {% endif %}
-                <div class="form-text">{{ template_data.form.skills_required.help_text }}</div>
-              </div>
               
               <div class="mb-3">
                 <label for="{{ template_data.form.benefits.id_for_label }}" class="form-label">

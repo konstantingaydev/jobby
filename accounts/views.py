@@ -7,8 +7,8 @@ from django.forms import modelformset_factory
 from django.http import JsonResponse, HttpResponseRedirect
 from django.core.paginator import Paginator
 from django.db import models
-from .forms import CustomUserCreationForm, CustomErrorList, ProfileForm, SkillForm, EducationForm, WorkExperienceForm, PrivacySettingsForm
-from .models import Profile, Skill, Education, WorkExperience
+from .forms import CustomUserCreationForm, CustomErrorList, ProfileForm, SkillForm, EducationForm, WorkExperienceForm, PrivacySettingsForm, ProjectForm
+from .models import Profile, Skill, Education, WorkExperience, Project
 
 @login_required
 def logout(request):
@@ -175,6 +175,33 @@ def manage_experience(request):
         'profile': profile,
     }
     return render(request, 'accounts/manage_experience.html', context)
+
+@login_required
+def manage_projects(request):
+    """Manage user's projects"""
+    profile = request.user.profile
+    ProjectFormSet = modelformset_factory(Project, form=ProjectForm, extra=1, can_delete=True)
+    
+    if request.method == 'POST':
+        formset = ProjectFormSet(request.POST, queryset=profile.projects.all())
+        if formset.is_valid():
+            projects = formset.save(commit=False)
+            for project in projects:
+                project.profile = profile
+                project.save()
+            for project in formset.deleted_objects:
+                project.delete()
+            messages.success(request, 'Projects updated successfully!')
+            return redirect('accounts.profile_detail')
+    else:
+        formset = ProjectFormSet(queryset=profile.projects.all())
+    
+    context = {
+        'template_data': {'title': 'Manage Projects'},
+        'formset': formset,
+        'profile': profile,
+    }
+    return render(request, 'accounts/manage_projects.html', context)
 
 def can_view_profile(viewer_user, profile_owner):
     """Check if viewer can see the profile based on privacy settings"""

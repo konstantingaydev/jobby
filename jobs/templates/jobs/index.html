@@ -72,13 +72,15 @@
                     {{ template_data.search_form.salary_max }}
                   </div>
                   
-                  <!-- Checkboxes -->
+                  <!-- Remote Work Checkbox -->
                   <div class="col-md-3">
                     <div class="form-check mt-4">
                       {{ template_data.search_form.is_remote }}
                       {{ template_data.search_form.is_remote.label_tag }}
                     </div>
                   </div>
+                  
+                  <!-- Visa Sponsorship Checkbox -->
                   <div class="col-md-3">
                     <div class="form-check mt-4">
                       {{ template_data.search_form.visa_sponsorship }}
@@ -130,13 +132,6 @@
                 {% if job.visa_sponsorship %}<br><i class="fas fa-passport"></i> Visa sponsorship available{% endif %}
               </small>
             </p>
-            {% if job.skills_required %}
-            <div class="mb-2">
-              {% for skill in job.skills_list %}
-                <span class="badge bg-light text-dark me-1">{{ skill }}</span>
-              {% endfor %}
-            </div>
-            {% endif %}
             <p class="card-text flex-grow-1">{{ job.description|truncatewords:20 }}</p>
             <div class="mt-auto">
               <a href="{% url 'jobs.show' id=job.id %}" class="btn btn-primary w-100">View Details</a>

@@ -38,14 +38,11 @@ def index(request):
             )
         
         if skills:
-            # Split skills and search for any of them in both skills_required and requirements fields
+            # Split skills and search for any of them in the requirements field
             skill_list = [skill.strip() for skill in skills.split(',') if skill.strip()]
             skill_query = Q()
             for skill in skill_list:
-                skill_query |= (
-                    Q(skills_required__icontains=skill) |
-                    Q(requirements__icontains=skill)
-                )
+                skill_query |= Q(requirements__icontains=skill)
             jobs = jobs.filter(skill_query)
         
         if location:

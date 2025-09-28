@@ -7,7 +7,7 @@ class JobForm(forms.ModelForm):
         fields = [
             'title', 'company_name', 'location', 'salary_min', 'salary_max',
             'employment_type', 'experience_level', 'description', 'requirements',
-            'skills_required', 'benefits', 'is_remote', 'visa_sponsorship', 
+            'benefits', 'is_remote', 'visa_sponsorship', 
             'image', 'is_active'
         ]
         widgets = {
@@ -47,10 +47,6 @@ class JobForm(forms.ModelForm):
                 'rows': 4,
                 'placeholder': 'List required skills, qualifications, and experience...'
             }),
-            'skills_required': forms.TextInput(attrs={
-                'class': 'form-control',
-                'placeholder': 'Python, JavaScript, React, SQL, etc.'
-            }),
             'benefits': forms.Textarea(attrs={
                 'class': 'form-control',
                 'rows': 3,
@@ -80,7 +76,6 @@ class JobForm(forms.ModelForm):
             'experience_level': 'Experience Level',
             'description': 'Job Description',
             'requirements': 'Requirements',
-            'skills_required': 'Required Skills',
             'benefits': 'Benefits & Perks',
             'is_remote': 'Remote Position',
             'visa_sponsorship': 'Visa Sponsorship Available',
@@ -90,7 +85,6 @@ class JobForm(forms.ModelForm):
         help_texts = {
             'salary_min': 'Leave blank if not specified',
             'salary_max': 'Leave blank if not specified',
-            'skills_required': 'Comma-separated list of required skills',
             'benefits': 'Optional - describe benefits and perks',
             'is_remote': 'Check if this is a remote position',
             'visa_sponsorship': 'Check if visa sponsorship is available',
