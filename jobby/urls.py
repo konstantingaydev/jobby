@@ -22,7 +22,14 @@ urlpatterns = [
     path("admin/", admin.site.urls),
     path('', include('home.urls')),
     path('accounts/', include('accounts.urls')),
+    path('profiles/', include('profiles.urls')),
     path('jobs/', include('jobs.urls')),
+    path('recruiter/', include('recruiter.urls')),
+    # Placeholder URLs for future apps
+    # path('applications/', include('applications.urls')),
+    # path('messaging/', include('messaging.urls')),
+    # path('recommendations/', include('recommendations.urls')),
+    # path('analytics/', include('analytics.urls')),
 ]
 urlpatterns += static(settings.MEDIA_URL,
     document_root=settings.MEDIA_ROOT)

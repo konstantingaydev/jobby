@@ -7,7 +7,7 @@ from django.http import HttpResponseForbidden
 
 from .models import Job
 from .forms import JobForm, JobSearchForm
-from accounts.models import Profile
+from profiles.models import Profile
 
 def index(request):
     """Display all job postings with enhanced search and filtering capabilities"""
