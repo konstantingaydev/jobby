@@ -73,7 +73,7 @@ def profile_detail(request, pk=None):
         'can_view_experience': profile.show_experience or profile.user == request.user,
         'can_view_links': profile.show_links or profile.user == request.user,
     }
-    return render(request, 'accounts/profile_detail.html', context)
+    return render(request, 'profiles/profile_detail.html', context)
 
 @login_required
 def profile_edit(request):
@@ -94,7 +94,7 @@ def profile_edit(request):
         'form': form,
         'profile': profile,
     }
-    return render(request, 'accounts/profile_edit.html', context)
+    return render(request, 'profiles/profile_edit.html', context)
 
 @login_required
 def manage_skills(request):
@@ -121,7 +121,7 @@ def manage_skills(request):
         'formset': formset,
         'profile': profile,
     }
-    return render(request, 'accounts/manage_skills.html', context)
+    return render(request, 'profiles/manage_skills.html', context)
 
 @login_required
 def manage_education(request):
@@ -148,7 +148,7 @@ def manage_education(request):
         'formset': formset,
         'profile': profile,
     }
-    return render(request, 'accounts/manage_education.html', context)
+    return render(request, 'profiles/manage_education.html', context)
 
 @login_required
 def manage_experience(request):
@@ -175,7 +175,7 @@ def manage_experience(request):
         'formset': formset,
         'profile': profile,
     }
-    return render(request, 'accounts/manage_experience.html', context)
+    return render(request, 'profiles/manage_experience.html', context)
 
 @login_required
 def manage_projects(request):
@@ -202,7 +202,7 @@ def manage_projects(request):
         'formset': formset,
         'profile': profile,
     }
-    return render(request, 'accounts/manage_projects.html', context)
+    return render(request, 'profiles/manage_projects.html', context)
 
 def can_view_profile(viewer_user, profile_owner):
     """Check if viewer can see the profile based on privacy settings"""
@@ -244,7 +244,7 @@ def privacy_settings(request):
         'form': form,
         'profile': profile,
     }
-    return render(request, 'accounts/privacy_settings.html', context)
+    return render(request, 'profiles/privacy_settings.html', context)
 
 
 # Recruiter Dashboard Functions (from job-posting branch)
@@ -256,7 +256,7 @@ def recruiter_dashboard(request):
         return redirect('home.index')
     
     template_data = {'title': 'Recruiter Dashboard'}
-    return render(request, 'accounts/recruiter_dashboard.html', {'template_data': template_data})
+    return render(request, 'recruiter/recruiter_dashboard.html', {'template_data': template_data})
 
 
 @login_required  
@@ -337,4 +337,4 @@ def candidate_search(request):
         'candidates': candidates_page,  # Keep for backward compatibility
         'search_query': search_query,   # Keep for backward compatibility
     }
-    return render(request, 'accounts/candidate_search.html', context)
+    return render(request, 'recruiter/candidate_search.html', context)
