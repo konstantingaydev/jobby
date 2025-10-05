@@ -1,0 +1,82 @@
+{% extends 'base.html' %}
+
+{% block title %}Withdraw Application - {{ application.job.title }} - Jobby{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0 text-warning">
+                        <i class="fas fa-exclamation-triangle"></i> Withdraw Application
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <div class="mb-4 p-3 bg-light rounded">
+                        <h5 class="mb-2">{{ application.job.title }}</h5>
+                        <p class="mb-1"><strong>Company:</strong> {{ application.job.company_name }}</p>
+                        <p class="mb-1"><strong>Applied On:</strong> {{ application.applied_at|date:"F d, Y" }}</p>
+                        <p class="mb-1"><strong>Current Status:</strong> 
+                            <span class="badge bg-{{ application.get_status_color|slice:'5:' }}">
+                                {{ application.get_status_display }}
+                            </span>
+                        </p>
+                    </div>
+
+                    <div class="alert alert-warning">
+                        <h6><i class="fas fa-exclamation-triangle"></i> Are you sure you want to withdraw this application?</h6>
+                        <p class="mb-0">This action cannot be undone. Once withdrawn, you will need to reapply if you change your mind.</p>
+                    </div>
+
+                    <div class="mb-4">
+                        <h6>What happens when you withdraw:</h6>
+                        <ul class="small">
+                            <li>Your application status will be changed to "Closed"</li>
+                            <li>The recruiter will be notified that you've withdrawn</li>
+                            <li>You can still view this application in your history</li>
+                            <li>You can reapply to this job in the future if it's still active</li>
+                        </ul>
+                    </div>
+
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <a href="{% url 'applications:application_detail' application.id %}" class="btn btn-secondary me-md-2">
+                                <i class="fas fa-arrow-left"></i> Cancel
+                            </a>
+                            <button type="submit" class="btn btn-danger">
+                                <i class="fas fa-times"></i> Yes, Withdraw Application
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Alternative Actions -->
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Before You Withdraw</h5>
+                </div>
+                <div class="card-body">
+                    <p class="small text-muted">Consider these alternatives:</p>
+                    <ul class="small">
+                        <li><strong>Wait a bit longer:</strong> Recruiters often take time to review applications</li>
+                        <li><strong>Follow up:</strong> Consider reaching out to the company directly</li>
+                        <li><strong>Update your profile:</strong> Make sure your profile showcases your best skills</li>
+                    </ul>
+                    
+                    <div class="mt-3">
+                        <a href="{% url 'jobs.show' application.job.id %}" class="btn btn-outline-primary btn-sm me-2">
+                            <i class="fas fa-eye"></i> View Job Details
+                        </a>
+                        <a href="{% url 'profiles:profile_edit' %}" class="btn btn-outline-secondary btn-sm">
+                            <i class="fas fa-user-edit"></i> Update Profile
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

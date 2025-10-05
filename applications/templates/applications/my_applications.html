@@ -1,0 +1,184 @@
+{% extends 'base.html' %}
+
+{% block title %}My Applications - Jobby{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <h2 class="mb-4">My Job Applications</h2>
+            
+            <!-- Application Statistics -->
+            <div class="row mb-4">
+                <div class="col-md-2">
+                    <div class="card text-center">
+                        <div class="card-body">
+                            <h5 class="card-title text-primary">{{ stats.total }}</h5>
+                            <p class="card-text small">Total</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <div class="card text-center">
+                        <div class="card-body">
+                            <h5 class="card-title text-info">{{ stats.applied }}</h5>
+                            <p class="card-text small">Applied</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <div class="card text-center">
+                        <div class="card-body">
+                            <h5 class="card-title text-warning">{{ stats.review }}</h5>
+                            <p class="card-text small">Under Review</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <div class="card text-center">
+                        <div class="card-body">
+                            <h5 class="card-title text-primary">{{ stats.interview }}</h5>
+                            <p class="card-text small">Interview</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <div class="card text-center">
+                        <div class="card-body">
+                            <h5 class="card-title text-success">{{ stats.offer }}</h5>
+                            <p class="card-text small">Offer</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <div class="card text-center">
+                        <div class="card-body">
+                            <h5 class="card-title text-secondary">{{ stats.closed }}</h5>
+                            <p class="card-text small">Closed</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Filter Form -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Filter Applications</h5>
+                </div>
+                <div class="card-body">
+                    <form method="get" class="row g-3">
+                        <div class="col-md-3">
+                            <label for="{{ filter_form.status.id_for_label }}" class="form-label">Status</label>
+                            {{ filter_form.status }}
+                        </div>
+                        <div class="col-md-3">
+                            <label for="{{ filter_form.date_from.id_for_label }}" class="form-label">From Date</label>
+                            {{ filter_form.date_from }}
+                        </div>
+                        <div class="col-md-3">
+                            <label for="{{ filter_form.date_to.id_for_label }}" class="form-label">To Date</label>
+                            {{ filter_form.date_to }}
+                        </div>
+                        <div class="col-md-3">
+                            <label for="{{ filter_form.company.id_for_label }}" class="form-label">Company</label>
+                            {{ filter_form.company }}
+                        </div>
+                        <div class="col-12">
+                            <button type="submit" class="btn btn-primary">Filter</button>
+                            <a href="{% url 'applications:my_applications' %}" class="btn btn-secondary">Clear</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Applications List -->
+            {% if page_obj %}
+                <div class="row">
+                    {% for application in page_obj %}
+                        <div class="col-12 mb-3">
+                            <div class="card">
+                                <div class="card-body">
+                                    <div class="row align-items-center">
+                                        <div class="col-md-6">
+                                            <h5 class="card-title mb-1">
+                                                <a href="{% url 'jobs.show' application.job.id %}" class="text-decoration-none">
+                                                    {{ application.job.title }}
+                                                </a>
+                                            </h5>
+                                            <p class="text-muted mb-1">{{ application.job.company_name }}</p>
+                                            <small class="text-muted">{{ application.job.location }}</small>
+                                        </div>
+                                        <div class="col-md-2 text-center">
+                                            <span class="badge bg-{{ application.status|yesno:'primary,warning,info,success,secondary' }} fs-6">
+                                                {{ application.get_status_display }}
+                                            </span>
+                                        </div>
+                                        <div class="col-md-2 text-center">
+                                            <small class="text-muted">Applied</small><br>
+                                            <strong>{{ application.applied_at|date:"M d, Y" }}</strong><br>
+                                            <small class="text-muted">{{ application.days_since_applied }} days ago</small>
+                                        </div>
+                                        <div class="col-md-2 text-end">
+                                            <a href="{% url 'applications:application_detail' application.id %}" class="btn btn-outline-primary btn-sm">
+                                                View Details
+                                            </a>
+                                            {% if application.can_withdraw %}
+                                                <a href="{% url 'applications:withdraw_application' application.id %}" class="btn btn-outline-danger btn-sm mt-1">
+                                                    Withdraw
+                                                </a>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    {% if application.cover_note %}
+                                        <div class="row mt-2">
+                                            <div class="col-12">
+                                                <small class="text-muted">Cover Note:</small>
+                                                <p class="small">{{ application.cover_note|truncatewords:20 }}</p>
+                                            </div>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+
+                <!-- Pagination -->
+                {% if page_obj.has_other_pages %}
+                    <nav aria-label="Applications pagination">
+                        <ul class="pagination justify-content-center">
+                            {% if page_obj.has_previous %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page=1{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.date_from %}&date_from={{ request.GET.date_from }}{% endif %}{% if request.GET.date_to %}&date_to={{ request.GET.date_to }}{% endif %}{% if request.GET.company %}&company={{ request.GET.company }}{% endif %}">First</a>
+                                </li>
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.date_from %}&date_from={{ request.GET.date_from }}{% endif %}{% if request.GET.date_to %}&date_to={{ request.GET.date_to }}{% endif %}{% if request.GET.company %}&company={{ request.GET.company }}{% endif %}">Previous</a>
+                                </li>
+                            {% endif %}
+
+                            <li class="page-item active">
+                                <span class="page-link">{{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+                            </li>
+
+                            {% if page_obj.has_next %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.date_from %}&date_from={{ request.GET.date_from }}{% endif %}{% if request.GET.date_to %}&date_to={{ request.GET.date_to }}{% endif %}{% if request.GET.company %}&company={{ request.GET.company }}{% endif %}">Next</a>
+                                </li>
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.date_from %}&date_from={{ request.GET.date_from }}{% endif %}{% if request.GET.date_to %}&date_to={{ request.GET.date_to }}{% endif %}{% if request.GET.company %}&company={{ request.GET.company }}{% endif %}">Last</a>
+                                </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                {% endif %}
+            {% else %}
+                <div class="text-center py-5">
+                    <h4 class="text-muted">No Applications Yet</h4>
+                    <p class="text-muted">You haven't applied to any jobs yet. Start browsing jobs to find your next opportunity!</p>
+                    <a href="{% url 'jobs.index' %}" class="btn btn-primary">Browse Jobs</a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

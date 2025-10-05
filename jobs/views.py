@@ -93,11 +93,28 @@ def index(request):
 
 def show(request, id):
     job = get_object_or_404(Job, id=id, is_active=True)
+    
+    # Check if user has already applied to this job (only active applications)
+    user_application = None
+    if request.user.is_authenticated:
+        try:
+            from applications.models import Application
+            user_application = Application.get_active_application(request.user, job)
+        except:
+            # Handle case where applications app might not be available
+            pass
+    
     template_data = {
         'title': job.title,
         'job': job
     }
-    return render(request, 'jobs/show.html', {'template_data': template_data})
+    
+    context = {
+        'template_data': template_data,
+        'user_application': user_application
+    }
+    
+    return render(request, 'jobs/show.html', context)
 
 @login_required
 def my_jobs(request):
