@@ -71,9 +71,16 @@
         </p>
         
         <div class="mt-2">
-          <a href="{% url 'accounts.profile_detail' pk=profile.pk %}" class="btn btn-sm btn-primary me-2">View Profile</a>
+          <a href="{% url 'accounts.profile_detail' pk=profile.pk %}" class="btn btn-sm btn-primary me-2">
+            <i class="fas fa-user"></i> View Profile
+          </a>
           {% if profile.user.email %}
-            <a href="mailto:{{ profile.user.email }}" class="btn btn-sm btn-outline-primary">Email</a>
+            <a href="{% url 'messaging:send_email' profile.user.id %}" class="btn btn-sm btn-success me-2">
+              <i class="fas fa-envelope"></i> Send Email
+            </a>
+            <a href="mailto:{{ profile.user.email }}" class="btn btn-sm btn-outline-primary">
+              <i class="fas fa-external-link-alt"></i> Direct Email
+            </a>
           {% endif %}
         </div>
       </div>

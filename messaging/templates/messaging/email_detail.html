@@ -1,0 +1,90 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ template_data.title }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8 mx-auto">
+            <!-- Email Thread -->
+            {% for thread_email in thread_messages %}
+                <div class="card mb-3 {% if thread_email.id == email.id %}border-primary{% endif %}">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="mb-0">
+                                {% if thread_email.sender == user %}
+                                    <i class="fas fa-paper-plane text-success"></i>
+                                    You sent to {{ thread_email.recipient.get_full_name|default:thread_email.recipient.username }}
+                                {% else %}
+                                    <i class="fas fa-envelope text-primary"></i>
+                                    {{ thread_email.sender.get_full_name|default:thread_email.sender.username }} sent to you
+                                {% endif %}
+                            </h6>
+                            <small class="text-muted">{{ thread_email.sent_at|date:"M d, Y H:i" }}</small>
+                        </div>
+                        <div>
+                            <span class="badge bg-secondary">{{ thread_email.get_message_type_display }}</span>
+                            {% if thread_email.related_job %}
+                                <span class="badge bg-info">{{ thread_email.related_job.title }}</span>
+                            {% endif %}
+                            <span class="badge bg-{% if thread_email.status == 'sent' %}success{% elif thread_email.status == 'read' %}primary{% elif thread_email.status == 'replied' %}success{% elif thread_email.status == 'failed' %}danger{% else %}secondary{% endif %}">
+                                {{ thread_email.get_status_display }}
+                            </span>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <h5 class="card-title">{{ thread_email.subject }}</h5>
+                        <div class="card-text">
+                            {{ thread_email.message|linebreaks }}
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+            
+            <!-- Reply Form -->
+            {% if email.recipient == user %}
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-reply"></i> Reply to {{ email.sender.get_full_name|default:email.sender.username }}
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <form method="post">
+                            {% csrf_token %}
+                            
+                            <div class="mb-3">
+                                <label for="{{ reply_form.message.id_for_label }}" class="form-label">Your Reply</label>
+                                {{ reply_form.message }}
+                                {% if reply_form.message.errors %}
+                                    <div class="text-danger">
+                                        {% for error in reply_form.message.errors %}
+                                            <small>{{ error }}</small>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="d-flex justify-content-between">
+                                <a href="{% url 'messaging:inbox' %}" class="btn btn-secondary">
+                                    <i class="fas fa-arrow-left"></i> Back to Inbox
+                                </a>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-paper-plane"></i> Send Reply
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            {% else %}
+                <div class="text-center">
+                    <a href="{% url 'messaging:inbox' %}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left"></i> Back to Inbox
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

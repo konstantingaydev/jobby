@@ -1,0 +1,52 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ template_data.title }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8 mx-auto">
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h4 class="mb-0">
+                        <i class="fas fa-check-circle"></i> {{ template_data.title }}
+                    </h4>
+                </div>
+                <div class="card-body text-center">
+                    <div class="mb-4">
+                        <i class="fas fa-paper-plane fa-3x text-success mb-3"></i>
+                        <h5>Email sent successfully!</h5>
+                        <p class="text-muted">Your message has been delivered to {{ email.recipient.get_full_name|default:email.recipient.username }}.</p>
+                    </div>
+                    
+                    <div class="card bg-light">
+                        <div class="card-body">
+                            <h6 class="card-title">Email Details</h6>
+                            <p class="mb-1"><strong>To:</strong> {{ email.recipient.get_full_name|default:email.recipient.username }} ({{ email.recipient.email }})</p>
+                            <p class="mb-1"><strong>Subject:</strong> {{ email.subject }}</p>
+                            <p class="mb-1"><strong>Type:</strong> {{ email.get_message_type_display }}</p>
+                            <p class="mb-1"><strong>Sent:</strong> {{ email.sent_at|date:"M d, Y H:i" }}</p>
+                            {% if email.related_job %}
+                                <p class="mb-0"><strong>Related Job:</strong> {{ email.related_job.title }}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="mt-4">
+                        <a href="{% url 'messaging:email_detail' email.id %}" class="btn btn-primary">
+                            <i class="fas fa-eye"></i> View Email
+                        </a>
+                        <a href="{% url 'messaging:inbox' %}" class="btn btn-secondary">
+                            <i class="fas fa-inbox"></i> Go to Inbox
+                        </a>
+                        <a href="{% url 'recruiter:candidate_search' %}" class="btn btn-outline-primary">
+                            <i class="fas fa-search"></i> Find More Candidates
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

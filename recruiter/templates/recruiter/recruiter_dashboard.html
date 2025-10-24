@@ -72,7 +72,7 @@
 
     <!-- Main Action Cards -->
     <div class="row mb-4">
-        <div class="col-lg-6 mb-4">
+        <div class="col-lg-4 mb-4">
             <div class="card h-100 shadow-sm">
                 <div class="card-header bg-primary text-white">
                     <h5 class="card-title mb-0">
@@ -97,7 +97,7 @@
             </div>
         </div>
         
-        <div class="col-lg-6 mb-4">
+        <div class="col-lg-4 mb-4">
             <div class="card h-100 shadow-sm">
                 <div class="card-header bg-success text-white">
                     <h5 class="card-title mb-0">
@@ -108,14 +108,36 @@
                     <p class="card-text">Search through our database of qualified candidates. Filter by skills, location, experience, and more.</p>
                     
                     <div class="d-grid gap-2">
-                        <a href="{% url 'accounts.candidate_search' %}" class="btn btn-success">
+                        <a href="{% url 'recruiter:candidate_search' %}" class="btn btn-success">
                             <i class="fas fa-search me-2"></i>Search Candidates
                         </a>
-                        <a href="{% url 'accounts.candidate_search' %}?skills=python" class="btn btn-outline-success">
+                        <a href="{% url 'recruiter:candidate_search' %}?skills=python" class="btn btn-outline-success">
                             <i class="fas fa-code me-2"></i>Find Developers
                         </a>
-                        <a href="{% url 'accounts.candidate_search' %}?location=remote" class="btn btn-outline-success">
+                        <a href="{% url 'recruiter:candidate_search' %}?location=remote" class="btn btn-outline-success">
                             <i class="fas fa-home me-2"></i>Remote Workers
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-4 mb-4">
+            <div class="card h-100 shadow-sm">
+                <div class="card-header bg-info text-white">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-envelope me-2"></i>Messaging
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <p class="card-text">Communicate with candidates directly through our platform. Send emails, track conversations, and manage your outreach.</p>
+                    
+                    <div class="d-grid gap-2">
+                        <a href="{% url 'messaging:inbox' %}" class="btn btn-info">
+                            <i class="fas fa-inbox me-2"></i>View Messages
+                        </a>
+                        <a href="{% url 'recruiter:candidate_search' %}" class="btn btn-outline-info">
+                            <i class="fas fa-paper-plane me-2"></i>Contact Candidates
                         </a>
                     </div>
                 </div>

@@ -1,0 +1,138 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ template_data.title }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h4 class="mb-0">
+                        <i class="fas fa-inbox"></i> {{ template_data.title }}
+                    </h4>
+                    <a href="{% url 'recruiter:candidate_search' %}" class="btn btn-primary">
+                        <i class="fas fa-search"></i> Find Candidates
+                    </a>
+                </div>
+                <div class="card-body">
+                    <!-- Search and Filter Form -->
+                    <form method="get" class="mb-4">
+                        <div class="row">
+                            <div class="col-md-3">
+                                {{ search_form.search_query }}
+                            </div>
+                            <div class="col-md-2">
+                                {{ search_form.message_type }}
+                            </div>
+                            <div class="col-md-2">
+                                {{ search_form.status }}
+                            </div>
+                            <div class="col-md-2">
+                                {{ search_form.message_filter }}
+                            </div>
+                            <div class="col-md-3">
+                                <button type="submit" class="btn btn-outline-primary">
+                                    <i class="fas fa-search"></i> Search
+                                </button>
+                                <a href="{% url 'messaging:inbox' %}" class="btn btn-outline-secondary">
+                                    <i class="fas fa-times"></i> Clear
+                                </a>
+                            </div>
+                        </div>
+                    </form>
+                    
+                    <!-- Email List -->
+                    {% if emails %}
+                        <div class="list-group">
+                            {% for email in emails %}
+                                <div class="list-group-item {% if email.recipient == user and not email.is_read %}list-group-item-primary{% endif %}">
+                                    <div class="d-flex w-100 justify-content-between">
+                                        <div class="flex-grow-1">
+                                            <h6 class="mb-1">
+                                                {% if email.sender == user %}
+                                                    <i class="fas fa-paper-plane text-success"></i>
+                                                    To: {{ email.recipient.get_full_name|default:email.recipient.username }}
+                                                {% else %}
+                                                    <i class="fas fa-envelope {% if not email.is_read %}text-primary{% else %}text-muted{% endif %}"></i>
+                                                    From: {{ email.sender.get_full_name|default:email.sender.username }}
+                                                {% endif %}
+                                                {% if not email.is_read and email.recipient == user %}
+                                                    <span class="badge bg-primary">New</span>
+                                                {% endif %}
+                                            </h6>
+                                            <h5 class="mb-1">
+                                                <a href="{% url 'messaging:email_detail' email.id %}" class="text-decoration-none">
+                                                    {{ email.subject }}
+                                                </a>
+                                            </h5>
+                                            <p class="mb-1 text-muted">
+                                                {{ email.message|truncatewords:20 }}
+                                            </p>
+                                            <small class="text-muted">
+                                                <span class="badge bg-secondary">{{ email.get_message_type_display }}</span>
+                                                {% if email.related_job %}
+                                                    <span class="badge bg-info">{{ email.related_job.title }}</span>
+                                                {% endif %}
+                                                <span class="badge bg-{% if email.status == 'sent' %}success{% elif email.status == 'read' %}primary{% elif email.status == 'replied' %}success{% elif email.status == 'failed' %}danger{% else %}secondary{% endif %}">
+                                                    {{ email.get_status_display }}
+                                                </span>
+                                            </small>
+                                        </div>
+                                        <small class="text-muted">
+                                            {{ email.sent_at|date:"M d, Y H:i" }}
+                                        </small>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                        
+                        <!-- Pagination -->
+                        {% if emails.has_other_pages %}
+                            <nav aria-label="Email pagination" class="mt-4">
+                                <ul class="pagination justify-content-center">
+                                    {% if emails.has_previous %}
+                                        <li class="page-item">
+                                            <a class="page-link" href="?page=1{% if request.GET.search_query %}&search_query={{ request.GET.search_query }}{% endif %}{% if request.GET.message_type %}&message_type={{ request.GET.message_type }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.message_filter %}&message_filter={{ request.GET.message_filter }}{% endif %}">First</a>
+                                        </li>
+                                        <li class="page-item">
+                                            <a class="page-link" href="?page={{ emails.previous_page_number }}{% if request.GET.search_query %}&search_query={{ request.GET.search_query }}{% endif %}{% if request.GET.message_type %}&message_type={{ request.GET.message_type }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.message_filter %}&message_filter={{ request.GET.message_filter }}{% endif %}">Previous</a>
+                                        </li>
+                                    {% endif %}
+                                    
+                                    <li class="page-item active">
+                                        <span class="page-link">
+                                            Page {{ emails.number }} of {{ emails.paginator.num_pages }}
+                                        </span>
+                                    </li>
+                                    
+                                    {% if emails.has_next %}
+                                        <li class="page-item">
+                                            <a class="page-link" href="?page={{ emails.next_page_number }}{% if request.GET.search_query %}&search_query={{ request.GET.search_query }}{% endif %}{% if request.GET.message_type %}&message_type={{ request.GET.message_type }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.message_filter %}&message_filter={{ request.GET.message_filter }}{% endif %}">Next</a>
+                                        </li>
+                                        <li class="page-item">
+                                            <a class="page-link" href="?page={{ emails.paginator.num_pages }}{% if request.GET.search_query %}&search_query={{ request.GET.search_query }}{% endif %}{% if request.GET.message_type %}&message_type={{ request.GET.message_type }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.message_filter %}&message_filter={{ request.GET.message_filter }}{% endif %}">Last</a>
+                                        </li>
+                                    {% endif %}
+                                </ul>
+                            </nav>
+                        {% endif %}
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                            <h5 class="text-muted">No emails found</h5>
+                            <p class="text-muted">You haven't sent or received any emails yet.</p>
+                            {% if user.profile.user_type == 'recruiter' %}
+                                <a href="{% url 'recruiter:candidate_search' %}" class="btn btn-primary">
+                                    <i class="fas fa-search"></i> Find Candidates to Contact
+                                </a>
+                            {% endif %}
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
