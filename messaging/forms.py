@@ -1,6 +1,6 @@
 from django import forms
 from django.contrib.auth.models import User
-from .models import EmailMessage
+from .models import EmailMessage, InternalMessage, Conversation
 
 class EmailCandidateForm(forms.ModelForm):
     """Form for recruiters to send emails to candidates."""
@@ -114,3 +114,126 @@ class EmailSearchForm(forms.Form):
         required=False,
         widget=forms.Select(attrs={'class': 'form-control'})
     )
+
+class InternalMessageForm(forms.ModelForm):
+    """Form for sending internal messages."""
+    
+    class Meta:
+        model = InternalMessage
+        fields = ['content', 'message_type', 'attachment_url', 'attachment_name']
+        widgets = {
+            'content': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 4,
+                'placeholder': 'Type your message...',
+                'id': 'message-content'
+            }),
+            'message_type': forms.Select(attrs={
+                'class': 'form-control'
+            }),
+            'attachment_url': forms.URLInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Optional: Link to document or resource'
+            }),
+            'attachment_name': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Attachment name (if URL provided)'
+            })
+        }
+    
+    def __init__(self, *args, **kwargs):
+        self.sender = kwargs.pop('sender', None)
+        self.recipient = kwargs.pop('recipient', None)
+        super().__init__(*args, **kwargs)
+        
+        # Set default message type based on user type
+        if self.sender and hasattr(self.sender, 'profile'):
+            if self.sender.profile.user_type == 'recruiter':
+                self.fields['message_type'].initial = 'job_invite'
+            else:
+                self.fields['message_type'].initial = 'general'
+    
+    def clean_content(self):
+        content = self.cleaned_data.get('content')
+        if not content or len(content.strip()) < 1:
+            raise forms.ValidationError("Message cannot be empty.")
+        if len(content) > 2000:
+            raise forms.ValidationError("Message is too long. Please keep it under 2000 characters.")
+        return content
+
+class ConversationSearchForm(forms.Form):
+    """Form for searching conversations."""
+    
+    search_query = forms.CharField(
+        required=False,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Search conversations...'
+        })
+    )
+    
+    message_type = forms.ChoiceField(
+        choices=[('', 'All Types')] + InternalMessage.MESSAGE_TYPE_CHOICES,
+        required=False,
+        widget=forms.Select(attrs={'class': 'form-control'})
+    )
+    
+    unread_only = forms.BooleanField(
+        required=False,
+        widget=forms.CheckboxInput(attrs={'class': 'form-check-input'})
+    )
+
+class StartConversationForm(forms.Form):
+    """Form for starting a new conversation."""
+    
+    recipient = forms.ModelChoiceField(
+        queryset=User.objects.none(),
+        widget=forms.Select(attrs={'class': 'form-control'})
+    )
+    
+    initial_message = forms.CharField(
+        widget=forms.Textarea(attrs={
+            'class': 'form-control',
+            'rows': 3,
+            'placeholder': 'Write your initial message...'
+        })
+    )
+    
+    message_type = forms.ChoiceField(
+        choices=InternalMessage.MESSAGE_TYPE_CHOICES,
+        widget=forms.Select(attrs={'class': 'form-control'})
+    )
+    
+    related_job = forms.ModelChoiceField(
+        queryset=None,
+        required=False,
+        widget=forms.Select(attrs={'class': 'form-control'})
+    )
+    
+    def __init__(self, *args, **kwargs):
+        self.sender = kwargs.pop('sender', None)
+        super().__init__(*args, **kwargs)
+        
+        if self.sender:
+            # Filter recipients based on sender type
+            if hasattr(self.sender, 'profile') and self.sender.profile.user_type == 'recruiter':
+                # Recruiters can message job seekers
+                self.fields['recipient'].queryset = User.objects.filter(
+                    profile__user_type='regular'
+                ).exclude(id=self.sender.id)
+                
+                # Show recruiter's jobs
+                self.fields['related_job'].queryset = self.sender.job_set.all()
+            else:
+                # Job seekers can message recruiters
+                self.fields['recipient'].queryset = User.objects.filter(
+                    profile__user_type='recruiter'
+                ).exclude(id=self.sender.id)
+                self.fields['related_job'].queryset = None
+                self.fields['related_job'].widget = forms.HiddenInput()
+    
+    def clean_initial_message(self):
+        message = self.cleaned_data.get('initial_message')
+        if not message or len(message.strip()) < 1:
+            raise forms.ValidationError("Initial message cannot be empty.")
+        return message

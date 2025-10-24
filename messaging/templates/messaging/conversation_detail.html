@@ -1,0 +1,192 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ template_data.title }}{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'messaging/js/messaging.js' %}"></script>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8 mx-auto">
+            <!-- Conversation Header -->
+            <div class="card mb-3">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <div>
+                        <h5 class="mb-0">
+                            <i class="fas fa-user"></i>
+                            {{ other_participant.get_full_name|default:other_participant.username }}
+                        </h5>
+                        {% if conversation.related_job %}
+                            <small class="text-muted">
+                                <i class="fas fa-briefcase"></i> Related to: {{ conversation.related_job.title }}
+                            </small>
+                        {% endif %}
+                    </div>
+                    <div>
+                        <a href="{% url 'messaging:internal_messages' %}" class="btn btn-sm btn-outline-secondary">
+                            <i class="fas fa-arrow-left"></i> Back to Messages
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Messages -->
+            <div class="card mb-3" style="height: 500px; overflow-y: auto;">
+                <div class="card-body">
+                    {% if messages %}
+                        {% for message in messages %}
+                            <div class="mb-3 {% if message.sender == user %}text-end{% endif %}">
+                                <div class="d-flex {% if message.sender == user %}justify-content-end{% else %}justify-content-start{% endif %}">
+                                    <div class="message-bubble {% if message.sender == user %}bg-primary text-white{% else %}bg-light{% endif %} p-3 rounded" style="max-width: 70%;">
+                                        <div class="message-content">
+                                            {{ message.content|linebreaks }}
+                                        </div>
+                                        
+                                        {% if message.attachment_url %}
+                                            <div class="mt-2">
+                                                <a href="{{ message.attachment_url }}" target="_blank" class="btn btn-sm {% if message.sender == user %}btn-light{% else %}btn-outline-primary{% endif %}">
+                                                    <i class="fas fa-paperclip"></i> {{ message.attachment_name|default:"Attachment" }}
+                                                </a>
+                                            </div>
+                                        {% endif %}
+                                        
+                                        <div class="message-meta mt-2">
+                                            <small class="{% if message.sender == user %}text-white-50{% else %}text-muted{% endif %}">
+                                                <span class="badge {% if message.sender == user %}bg-light text-dark{% else %}bg-secondary{% endif %}">
+                                                    {{ message.get_message_type_display }}
+                                                </span>
+                                                {{ message.time_since_sent }}
+                                                {% if message.is_read and message.sender == user %}
+                                                    <i class="fas fa-check-double text-success"></i>
+                                                {% elif message.sender == user %}
+                                                    <i class="fas fa-check text-muted"></i>
+                                                {% endif %}
+                                            </small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-comment-slash fa-2x text-muted mb-3"></i>
+                            <p class="text-muted">No messages yet. Start the conversation!</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Message Form -->
+            <div class="card">
+                <div class="card-body">
+                    <form method="post" id="message-form">
+                        {% csrf_token %}
+                        
+                        <div class="row">
+                            <div class="col-md-8">
+                                <div class="mb-3">
+                                    {{ form.content }}
+                                    {% if form.content.errors %}
+                                        <div class="text-danger">
+                                            {% for error in form.content.errors %}
+                                                <small>{{ error }}</small>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    {{ form.message_type }}
+                                    {% if form.message_type.errors %}
+                                        <div class="text-danger">
+                                            {% for error in form.message_type.errors %}
+                                                <small>{{ error }}</small>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ form.attachment_url }}
+                                    {% if form.attachment_url.errors %}
+                                        <div class="text-danger">
+                                            {% for error in form.attachment_url.errors %}
+                                                <small>{{ error }}</small>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ form.attachment_name }}
+                                    {% if form.attachment_name.errors %}
+                                        <div class="text-danger">
+                                            {% for error in form.attachment_name.errors %}
+                                                <small>{{ error }}</small>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-paper-plane"></i> Send Message
+                                </button>
+                            </div>
+                            <div>
+                                <a href="{% url 'messaging:delete_conversation' conversation.id %}" class="btn btn-outline-danger">
+                                    <i class="fas fa-trash"></i> Delete Conversation
+                                </a>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.message-bubble {
+    word-wrap: break-word;
+}
+
+.message-bubble.bg-primary {
+    background-color: #007bff !important;
+}
+
+.message-bubble.bg-light {
+    background-color: #f8f9fa !important;
+    border: 1px solid #dee2e6;
+}
+</style>
+
+<script>
+// Auto-scroll to bottom of messages
+document.addEventListener('DOMContentLoaded', function() {
+    const messagesContainer = document.querySelector('.card-body');
+    if (messagesContainer) {
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    }
+});
+
+// Auto-refresh messages every 30 seconds
+setInterval(function() {
+    // This could be enhanced with AJAX to fetch new messages
+    // For now, we'll just reload the page
+    // window.location.reload();
+}, 30000);
+</script>
+{% endblock %}

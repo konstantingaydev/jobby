@@ -133,11 +133,11 @@
                     <p class="card-text">Communicate with candidates directly through our platform. Send emails, track conversations, and manage your outreach.</p>
                     
                     <div class="d-grid gap-2">
-                        <a href="{% url 'messaging:inbox' %}" class="btn btn-info">
-                            <i class="fas fa-inbox me-2"></i>View Messages
+                        <a href="{% url 'messaging:internal_messages' %}" class="btn btn-info">
+                            <i class="fas fa-comments me-2"></i>View Messages
                         </a>
-                        <a href="{% url 'recruiter:candidate_search' %}" class="btn btn-outline-info">
-                            <i class="fas fa-paper-plane me-2"></i>Contact Candidates
+                        <a href="{% url 'messaging:start_conversation' %}" class="btn btn-outline-info">
+                            <i class="fas fa-plus me-2"></i>New Message
                         </a>
                     </div>
                 </div>

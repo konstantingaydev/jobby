@@ -2,7 +2,7 @@ from django.test import TestCase, Client
 from django.contrib.auth.models import User
 from django.urls import reverse
 from django.core import mail
-from .models import EmailMessage
+from .models import EmailMessage, Conversation, InternalMessage, MessageNotification
 
 class EmailMessagingTestCase(TestCase):
     def setUp(self):
@@ -108,3 +108,164 @@ class EmailMessagingTestCase(TestCase):
         self.assertEqual(reply.sender, self.candidate)
         self.assertEqual(reply.recipient, self.recruiter)
         self.assertTrue(reply.subject.startswith('Re: '))
+
+class InternalMessagingTestCase(TestCase):
+    def setUp(self):
+        # Create test users
+        self.recruiter = User.objects.create_user(
+            username='recruiter',
+            email='recruiter@test.com',
+            password='testpass123'
+        )
+        self.candidate = User.objects.create_user(
+            username='candidate',
+            email='candidate@test.com',
+            password='testpass123'
+        )
+        
+        # Create profiles
+        from profiles.models import Profile
+        Profile.objects.create(user=self.recruiter, user_type='recruiter')
+        Profile.objects.create(user=self.candidate, user_type='regular')
+        
+        self.client = Client()
+    
+    def test_start_conversation(self):
+        """Test starting a new conversation."""
+        # Login as recruiter
+        self.client.login(username='recruiter', password='testpass123')
+        
+        # Start conversation with candidate
+        response = self.client.post(
+            reverse('messaging:start_conversation'),
+            {
+                'recipient': self.candidate.id,
+                'initial_message': 'Hello! I have a job opportunity for you.',
+                'message_type': 'job_invite'
+            }
+        )
+        
+        # Check if conversation was created
+        self.assertEqual(Conversation.objects.count(), 1)
+        conversation = Conversation.objects.first()
+        self.assertIn(self.recruiter, conversation.participants.all())
+        self.assertIn(self.candidate, conversation.participants.all())
+        
+        # Check if initial message was created
+        self.assertEqual(InternalMessage.objects.count(), 1)
+        message = InternalMessage.objects.first()
+        self.assertEqual(message.sender, self.recruiter)
+        self.assertEqual(message.recipient, self.candidate)
+        self.assertEqual(message.content, 'Hello! I have a job opportunity for you.')
+        self.assertEqual(message.message_type, 'job_invite')
+        
+        # Check if notification was created
+        self.assertEqual(MessageNotification.objects.count(), 1)
+        notification = MessageNotification.objects.first()
+        self.assertEqual(notification.user, self.candidate)
+        self.assertEqual(notification.message, message)
+    
+    def test_send_message_in_conversation(self):
+        """Test sending a message in an existing conversation."""
+        # Create conversation
+        conversation = Conversation.objects.create()
+        conversation.participants.add(self.recruiter, self.candidate)
+        
+        # Login as recruiter
+        self.client.login(username='recruiter', password='testpass123')
+        
+        # Send message
+        response = self.client.post(
+            reverse('messaging:conversation_detail', args=[conversation.id]),
+            {
+                'content': 'This is a follow-up message.',
+                'message_type': 'follow_up'
+            }
+        )
+        
+        # Check if message was created
+        self.assertEqual(InternalMessage.objects.count(), 1)
+        message = InternalMessage.objects.first()
+        self.assertEqual(message.sender, self.recruiter)
+        self.assertEqual(message.recipient, self.candidate)
+        self.assertEqual(message.content, 'This is a follow-up message.')
+        self.assertEqual(message.message_type, 'follow_up')
+    
+    def test_conversation_access_control(self):
+        """Test that users can only access their own conversations."""
+        # Create conversation
+        conversation = Conversation.objects.create()
+        conversation.participants.add(self.recruiter, self.candidate)
+        
+        # Create another user
+        other_user = User.objects.create_user(
+            username='other',
+            email='other@test.com',
+            password='testpass123'
+        )
+        from profiles.models import Profile
+        Profile.objects.create(user=other_user, user_type='regular')
+        
+        # Login as other user
+        self.client.login(username='other', password='testpass123')
+        
+        # Try to access conversation (should get 404)
+        response = self.client.get(
+            reverse('messaging:conversation_detail', args=[conversation.id])
+        )
+        self.assertEqual(response.status_code, 404)
+    
+    def test_mark_message_read(self):
+        """Test marking messages as read."""
+        # Create conversation and message
+        conversation = Conversation.objects.create()
+        conversation.participants.add(self.recruiter, self.candidate)
+        
+        message = InternalMessage.objects.create(
+            conversation=conversation,
+            sender=self.recruiter,
+            recipient=self.candidate,
+            content='Test message',
+            message_type='text'
+        )
+        
+        # Login as candidate
+        self.client.login(username='candidate', password='testpass123')
+        
+        # Mark message as read
+        response = self.client.post(
+            reverse('messaging:mark_message_read', args=[message.id])
+        )
+        
+        self.assertEqual(response.status_code, 200)
+        message.refresh_from_db()
+        self.assertIsNotNone(message.read_at)
+    
+    def test_get_unread_count(self):
+        """Test getting unread message count."""
+        # Create conversation and message
+        conversation = Conversation.objects.create()
+        conversation.participants.add(self.recruiter, self.candidate)
+        
+        message = InternalMessage.objects.create(
+            conversation=conversation,
+            sender=self.recruiter,
+            recipient=self.candidate,
+            content='Test message',
+            message_type='text'
+        )
+        
+        # Create notification
+        MessageNotification.objects.create(
+            user=self.candidate,
+            message=message
+        )
+        
+        # Login as candidate
+        self.client.login(username='candidate', password='testpass123')
+        
+        # Get unread count
+        response = self.client.get(reverse('messaging:get_unread_count'))
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual(data['unread_count'], 1)
