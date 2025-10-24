@@ -1,5 +1,48 @@
+import csv
+from django.http import HttpResponse
 from django.contrib import admin
 from .models import Profile, Skill, Education, WorkExperience, Project
+
+def export_as_csv(modeladmin, request, queryset):
+    response = HttpResponse(
+        content_type='text/csv',
+        headers={'Content-Disposition': 'attachment; filename="profile_summary_report.csv"'},
+    )
+    writer = csv.writer(response)
+
+    # add headers here
+    writer.writerow([
+        'Username', 'Email', 'User Type', 'Headline', 'Location', 'Date Joined', 
+        'Skills', 'Education', 'Work History', 'Projects'
+    ])
+
+    queryset = queryset.select_related('user').prefetch_related(
+        'skills', 'education', 'work_experience', 'projects'
+    )
+
+    for profile in queryset:
+        # a single string, e.g., "Python; Django"
+        skills = "; ".join([s.name for s in profile.skills.all()])
+        education = "; ".join([f"{e.degree} at {e.institution}" for e in profile.education.all()])
+        work = "; ".join([w.position for w in profile.work_experience.all()])
+        projects = "; ".join([p.title for p in profile.projects.all()])
+
+        writer.writerow([
+            profile.user.username,
+            profile.user.email,
+            profile.get_user_type_display(),
+            profile.headline,
+            profile.location,
+            profile.user.date_joined,
+            skills,
+            education,
+            work,
+            projects
+        ])
+
+    return response
+
+export_as_csv.short_description = "Export Selected Profiles as CSV"
 
 class SkillInline(admin.TabularInline):
     model = Skill
@@ -24,6 +67,8 @@ class ProfileAdmin(admin.ModelAdmin):
     search_fields = ['user__username', 'user__email', 'headline', 'location']
     inlines = [SkillInline, EducationInline, WorkExperienceInline, ProjectInline]
     
+    actions = [export_as_csv]
+
     fieldsets = (
         ('User Information', {
             'fields': ('user', 'user_type')
