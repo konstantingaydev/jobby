@@ -1,0 +1,79 @@
+{% extends 'base.html' %}
+
+{% load static %}
+
+{% block content %}
+<div class="container mt-4">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h2>{{ template_data.title }}</h2>
+    <div>
+      <a href="{% url 'recruiter:dashboard' %}" class="btn btn-outline-secondary">Back to Dashboard</a>
+    </div>
+  </div>
+
+  <!-- Job selector to switch between pipelines -->
+  <div class="mb-3">
+    <div class="row">
+      <div class="col-md-8">
+        <div class="input-group">
+          <select id="kanban-job-select" class="form-select">
+            {% for j in request.user.posted_jobs.all %}
+              <option value="{% url 'recruiter:kanban_job' j.id %}" {% if j.id == job.id %}selected{% endif %}>{{ j.title }} — {{ j.company_name }}</option>
+            {% endfor %}
+          </select>
+          <button id="kanban-switch-btn" class="btn btn-secondary" type="button">Switch</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row" id="kanban-board">
+    {% for stage in stages %}
+      <div class="col-md-3">
+        <div class="card mb-3">
+          <div class="card-header bg-light">
+            <strong>{{ stage.name }}</strong>
+          </div>
+          <div class="card-body p-2 kanban-column" data-stage-id="{{ stage.id }}" ondrop="dropHandler(event)" ondragover="dragOverHandler(event)">
+            {% for card in stage.cards.all %}
+              <div class="card mb-2 kanban-card" draggable="true" data-card-id="{{ card.id }}" ondragstart="dragStartHandler(event)">
+                <div class="card-body p-2">
+                  <strong>{{ card.application.applicant.get_full_name }}</strong>
+                  <div><small class="text-muted">{{ card.application.applicant.username }}</small></div>
+                  <div><small class="text-muted">Applied: {{ card.application.applied_at|date:"M d, Y" }}</small></div>
+                </div>
+              </div>
+            {% empty %}
+              <div class="text-muted small">No candidates</div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+</div>
+
+<script src="{% static 'recruiter/kanban.js' %}"></script>
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    var switchBtn = document.getElementById('kanban-switch-btn');
+    var select = document.getElementById('kanban-job-select');
+    if (switchBtn && select) {
+      switchBtn.addEventListener('click', function () {
+        var url = select.value;
+        if (url) { window.location.href = url; }
+      });
+    }
+
+    // dashboard selector on recruiter dashboard
+    var openBtn = document.getElementById('open-pipeline-btn');
+    var jobSelect = document.getElementById('job-pipeline-select');
+    if (openBtn && jobSelect) {
+      openBtn.addEventListener('click', function () {
+        var url = jobSelect.value;
+        if (url) { window.location.href = url; }
+      });
+    }
+  });
+</script>
+{% endblock %}

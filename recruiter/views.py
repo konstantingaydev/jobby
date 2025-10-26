@@ -4,6 +4,14 @@ from django.contrib import messages
 from django.core.paginator import Paginator
 from django.db import models
 from profiles.models import Profile
+from django.shortcuts import get_object_or_404
+from django.http import JsonResponse, Http404
+from django.views.decorators.http import require_POST
+from django.db import transaction
+from applications.models import Application
+from .models import Stage, CandidateCard
+from jobs.models import Job
+import json
 
 @login_required
 def recruiter_dashboard(request):
@@ -13,7 +21,7 @@ def recruiter_dashboard(request):
         return redirect('home.index')
     
     template_data = {'title': 'Recruiter Dashboard'}
-    return render(request, 'recruiter/dashboard.html', {'template_data': template_data})
+    return render(request, 'recruiter/recruiter_dashboard.html', {'template_data': template_data})
 
 
 @login_required  
@@ -95,3 +103,121 @@ def candidate_search(request):
         'search_query': search_query,   # Keep for backward compatibility
     }
     return render(request, 'recruiter/candidate_search.html', context)
+
+
+@login_required
+def kanban_board(request, job_id=None):
+    """Render the kanban board for a recruiter's job. If no job_id provided, use first posted job."""
+    # Basic recruiter check
+    if not hasattr(request.user, 'profile') or request.user.profile.user_type != 'recruiter':
+        messages.error(request, 'Access denied. Recruiter account required.')
+        return redirect('home.index')
+
+    # determine job
+    if job_id:
+        job = get_object_or_404(Job, id=job_id)
+    else:
+        job = request.user.posted_jobs.first()
+        if not job:
+            messages.info(request, 'You have no jobs posted. Create a job to manage applicants.')
+            return redirect('jobs.create')
+
+    if job.posted_by != request.user:
+        messages.error(request, 'Access denied. You do not own this job.')
+        return redirect('recruiter:dashboard')
+
+    # Ensure stages exist for this job. If none, create sensible defaults.
+    stages = list(Stage.objects.filter(job=job).order_by('order'))
+    if not stages:
+        default = ['Applied', 'Phone Screen', 'Interview', 'Offer', 'Hired']
+        for idx, name in enumerate(default):
+            Stage.objects.create(job=job, name=name, order=idx)
+        stages = list(Stage.objects.filter(job=job).order_by('order'))
+
+    # Ensure each application has a CandidateCard. If not, place by application.status mapping.
+    apps = Application.objects.filter(job=job).select_related('applicant')
+    # mapping from application.status to stage name heuristically
+    status_map = {
+        'applied': 'Applied',
+        'review': 'Phone Screen',
+        'interview': 'Interview',
+        'offer': 'Offer',
+        'closed': 'Hired',
+    }
+
+    stage_by_name = {s.name: s for s in stages}
+    for app in apps:
+        if not hasattr(app, 'kanban_card'):
+            stage_name = status_map.get(app.status, 'Applied')
+            stage = stage_by_name.get(stage_name, stages[0])
+            # determine next order
+            next_order = (CandidateCard.objects.filter(stage=stage).aggregate(models.Max('order'))['order__max'] or 0) + 1
+            CandidateCard.objects.create(application=app, stage=stage, order=next_order)
+
+    # Reload stages with cards
+    stages = Stage.objects.filter(job=job).order_by('order').prefetch_related('cards__application__applicant')
+
+    context = {
+        'job': job,
+        'stages': stages,
+        'template_data': {'title': f'Pipeline — {job.title}'},
+    }
+    return render(request, 'recruiter/kanban_board.html', context)
+
+
+@login_required
+@require_POST
+def move_card(request):
+    """AJAX endpoint to move a card to another stage/order.
+
+    Expects JSON: { card_id: int, to_stage: int, to_order: int }
+    """
+    try:
+        payload = json.loads(request.body.decode('utf-8'))
+    except Exception:
+        return JsonResponse({'error': 'Invalid JSON'}, status=400)
+
+    card_id = payload.get('card_id')
+    to_stage_id = payload.get('to_stage')
+    to_order = payload.get('to_order')
+    if card_id is None or to_stage_id is None or to_order is None:
+        return JsonResponse({'error': 'Missing params'}, status=400)
+
+    card = get_object_or_404(CandidateCard, id=card_id)
+    stage = get_object_or_404(Stage, id=to_stage_id)
+
+    # permission: recruiter must own the job
+    if stage.job.posted_by != request.user:
+        return JsonResponse({'error': 'Permission denied'}, status=403)
+
+    # perform move and reorder atomically
+    with transaction.atomic():
+        # Shift down other cards in destination to make room
+        CandidateCard.objects.filter(stage=stage, order__gte=to_order).update(order=models.F('order')+1)
+
+        # Remove the card from its current stage slots
+        old_stage = card.stage
+        old_order = card.order
+        card.stage = stage
+        card.order = to_order
+        card.save()
+
+        # Close gap in old stage
+        CandidateCard.objects.filter(stage=old_stage, order__gt=old_order).update(order=models.F('order')-1)
+
+        # Optionally update the underlying application.status by heuristics
+        name = stage.name.lower()
+        app = card.application
+        if 'appl' in name:
+            app.status = 'applied'
+        elif 'phone' in name or 'screen' in name:
+            app.status = 'review'
+        elif 'interview' in name:
+            app.status = 'interview'
+        elif 'offer' in name:
+            app.status = 'offer'
+        elif 'hire' in name or 'closed' in name:
+            app.status = 'closed'
+        app.save()
+
+    return JsonResponse({'ok': True})

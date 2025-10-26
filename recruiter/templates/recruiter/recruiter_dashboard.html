@@ -89,8 +89,12 @@
                         <a href="{% url 'jobs.create' %}" class="btn btn-outline-primary">
                             <i class="fas fa-plus me-2"></i>Post New Job
                         </a>
+                        
                         <a href="{% url 'jobs.index' %}" class="btn btn-outline-secondary">
                             <i class="fas fa-search me-2"></i>Browse All Jobs
+                        </a>
+                        <a href="{% url 'recruiter:kanban' %}" class="btn btn-outline-primary">
+                            <i class="fas fa-columns me-2"></i>Open Pipeline
                         </a>
                     </div>
                 </div>
