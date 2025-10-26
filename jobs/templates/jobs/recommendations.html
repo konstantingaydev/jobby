@@ -1,0 +1,33 @@
+{% extends 'base.html' %}
+
+{% block content %}
+  <div class="container py-4">
+    <h1>Recommended Jobs</h1>
+    {% if template_data.user_skills %}
+      <p>Based on your skills: <strong>{{ template_data.user_skills }}</strong></p>
+    {% else %}
+      <p>You haven't listed any skills yet. Showing recent jobs instead. Edit your profile to get personalized recommendations.</p>
+    {% endif %}
+
+    <div class="row">
+      {% for job in template_data.recommended_jobs %}
+        <div class="col-md-4 mb-3">
+          <div class="card h-100">
+            {% if job.image %}
+              <img src="{{ job.image.url }}" class="card-img-top" alt="{{ job.title }}">
+            {% endif %}
+            <div class="card-body">
+              <h5 class="card-title">{{ job.title }}</h5>
+              <p class="card-text"><strong>{{ job.company_name }}</strong> — {{ job.location }}</p>
+              <p class="card-text">{{ job.description|truncatechars:120 }}</p>
+              <p class="card-text"><small>Skills: {{ job.skills_required }}</small></p>
+              <a href="{% url 'jobs.show' job.id %}" class="btn btn-primary">View Job</a>
+            </div>
+          </div>
+        </div>
+      {% empty %}
+        <p>No recommended jobs found.</p>
+      {% endfor %}
+    </div>
+  </div>
+{% endblock %}

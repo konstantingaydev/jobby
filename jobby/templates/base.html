@@ -32,18 +32,13 @@
         
         <div class="vr bg-white mx-2 d-none d-lg-block"></div>
 
-        {% load profile_extras %}
         {% if user.is_authenticated %}
-          {% if user|has_profile and user.profile.user_type == 'recruiter' %}
-            <a class="nav-link" href="{% url 'recruiter:dashboard' %}">Dashboard</a>
-            <a class="nav-link" href="{% url 'recruiter:candidate_search' %}">Find Candidates</a>
-          {% elif user.profile.user_type == 'regular' %}
-            <a class="nav-link" href="{% url 'applications:my_applications' %}">My Applications</a>
-            <a class="nav-link" href="{% url 'accounts.profile_detail' %}">My Profile</a>
+          {% if user.profile.user_type == 'recruiter' %}
+            <a class="nav-link" href="{% url 'accounts.search_candidates' %}">Search Candidates</a>
           {% endif %}
-          <a class="nav-link" href="{% url 'messaging:internal_messages' %}">
-            <i class="fas fa-comments"></i> Messages
-          </a>
+          {% if user.profile.user_type == 'regular' %}
+            <a class="nav-link" href="{% url 'jobs.recommendations' %}">Recommended Jobs</a>
+          {% endif %}
           <a class="nav-link" href="{% url 'accounts.logout' %}">Logout ({{ user.username }})</a>
         {% else %}
           <a class="nav-link" href="{% url 'accounts.login' %}">Login</a>
@@ -63,9 +58,8 @@
   </div>
 </footer>
         <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+    </script>
     
-    {% block extra_js %}
-    {% endblock %}
 
   </body>
 </html>

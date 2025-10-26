@@ -8,6 +8,7 @@ from django.http import HttpResponseForbidden
 from .models import Job
 from .forms import JobForm, JobSearchForm
 from profiles.models import Profile
+from django.contrib.auth.models import User
 
 def index(request):
     """Display all job postings with enhanced search and filtering capabilities"""
@@ -202,3 +203,60 @@ def delete_job(request, id):
         'job': job
     }
     return render(request, 'jobs/delete_job.html', {'template_data': template_data})
+
+
+@login_required
+def recommendations(request):
+    """Recommend jobs to job seekers based on their profile skills.
+
+    Ranking: jobs that share more skills with the user appear first.
+    If the user has no listed skills, show the most recent active jobs.
+    """
+    try:
+        profile = request.user.profile
+    except Profile.DoesNotExist:
+        messages.error(request, 'Please complete your profile to receive recommendations.')
+        return redirect('accounts.signup')
+
+    if profile.user_type != 'regular':
+        messages.error(request, 'Only job seekers can view recommended jobs.')
+        return redirect('jobs.index')
+
+    user_skills_raw = (profile.skills or '')
+    user_skills = [s.strip().lower() for s in user_skills_raw.split(',') if s.strip()]
+
+    jobs_qs = Job.objects.filter(is_active=True)
+
+    # If no user skills, return recent jobs
+    if not user_skills:
+        recommended = list(jobs_qs.order_by('-created_at')[:20])
+    else:
+        # Find jobs that match any skill in skills_required or requirements
+        match_query = Q()
+        for sk in user_skills:
+            match_query |= Q(skills_required__icontains=sk) | Q(requirements__icontains=sk)
+
+        matched_jobs = jobs_qs.filter(match_query).distinct()
+
+        # Score jobs by number of matching skills (intersection of token sets)
+        scored = []
+        for job in matched_jobs:
+            job_skills = [s.strip().lower() for s in (job.skills_required or '').split(',') if s.strip()]
+            # also consider words in requirements as fallback
+            req_skills = [s.strip().lower() for s in (job.requirements or '').split(',') if s.strip()]
+            combined = set(job_skills) | set(req_skills)
+            score = len(set(user_skills) & combined)
+            if score > 0:
+                scored.append((score, job))
+
+        # Sort by score desc then recent
+        scored.sort(key=lambda x: (-x[0], -x[1].created_at.timestamp()))
+        recommended = [j for _, j in scored]
+
+    template_data = {
+        'title': 'Recommended Jobs',
+        'recommended_jobs': recommended,
+        'user_skills': ', '.join(user_skills)
+    }
+
+    return render(request, 'jobs/recommendations.html', {'template_data': template_data})
