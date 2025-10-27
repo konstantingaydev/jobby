@@ -193,7 +193,7 @@ def internal_messages(request):
     """View for internal messaging inbox."""
     search_form = ConversationSearchForm(request.GET)
     
-    # Get conversations for the current user
+    # Get conversations for the current user (only active ones)
     conversations = Conversation.objects.filter(
         participants=request.user,
         is_active=True
@@ -242,7 +242,7 @@ def internal_messages(request):
 @login_required
 def conversation_detail(request, conversation_id):
     """View for a specific conversation."""
-    conversation = get_object_or_404(Conversation, id=conversation_id, participants=request.user)
+    conversation = get_object_or_404(Conversation, id=conversation_id, participants=request.user, is_active=True)
     other_participant = conversation.get_other_participant(request.user)
     
     # Mark all messages in this conversation as read
@@ -259,24 +259,30 @@ def conversation_detail(request, conversation_id):
     if request.method == 'POST':
         form = InternalMessageForm(request.POST, sender=request.user, recipient=other_participant)
         if form.is_valid():
-            message = form.save(commit=False)
-            message.conversation = conversation
-            message.sender = request.user
-            message.recipient = other_participant
-            message.save()
-            
-            # Update conversation timestamp
-            conversation.updated_at = timezone.now()
-            conversation.save()
-            
-            # Create notification for recipient
-            MessageNotification.objects.create(
-                user=other_participant,
-                message=message
-            )
-            
-            messages.success(request, 'Message sent successfully!')
-            return redirect('messaging:conversation_detail', conversation_id=conversation.id)
+            try:
+                with transaction.atomic():
+                    message = form.save(commit=False)
+                    message.conversation = conversation
+                    message.sender = request.user
+                    message.recipient = other_participant
+                    message.save()
+                    
+                    # Update conversation timestamp
+                    conversation.updated_at = timezone.now()
+                    conversation.save()
+                    
+                    # Create notification for recipient
+                    MessageNotification.objects.create(
+                        user=other_participant,
+                        message=message
+                    )
+                
+                messages.success(request, 'Message sent successfully!')
+                return redirect('messaging:conversation_detail', conversation_id=conversation.id)
+            except Exception as e:
+                messages.error(request, f'Failed to send message: {str(e)}')
+        else:
+            messages.error(request, 'Please correct the errors below.')
     else:
         form = InternalMessageForm(sender=request.user, recipient=other_participant)
     
@@ -296,10 +302,9 @@ def start_conversation(request, user_id=None):
         recipient = get_object_or_404(User, id=user_id)
         # Check if conversation already exists
         existing_conversation = Conversation.objects.filter(
-            participants=request.user
-        ).filter(
-            participants=recipient
-        ).first()
+            participants__in=[request.user, recipient],
+            is_active=True
+        ).filter(participants=request.user).filter(participants=recipient).first()
         
         if existing_conversation:
             return redirect('messaging:conversation_detail', conversation_id=existing_conversation.id)
@@ -316,20 +321,19 @@ def start_conversation(request, user_id=None):
             
             # Check if conversation already exists
             existing_conversation = Conversation.objects.filter(
-                participants=request.user
-            ).filter(
-                participants=recipient
-            ).first()
+                participants__in=[request.user, recipient],
+                is_active=True
+            ).filter(participants=request.user).filter(participants=recipient).first()
             
             if existing_conversation:
                 conversation = existing_conversation
             else:
                 # Create new conversation
-                conversation = Conversation.objects.create()
+                conversation = Conversation.objects.create(
+                    related_job=related_job,
+                    is_active=True
+                )
                 conversation.participants.add(request.user, recipient)
-                if related_job:
-                    conversation.related_job = related_job
-                    conversation.save()
             
             # Create initial message
             with transaction.atomic():
@@ -390,7 +394,7 @@ def get_unread_count(request):
 @login_required
 def delete_conversation(request, conversation_id):
     """View to delete/deactivate a conversation."""
-    conversation = get_object_or_404(Conversation, id=conversation_id, participants=request.user)
+    conversation = get_object_or_404(Conversation, id=conversation_id, participants=request.user, is_active=True)
     
     if request.method == 'POST':
         # Mark conversation as inactive

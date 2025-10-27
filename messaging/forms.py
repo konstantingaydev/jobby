@@ -147,7 +147,7 @@ class InternalMessageForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         
         # Set default message type based on user type
-        if self.sender and hasattr(self.sender, 'profile'):
+        if self.sender and hasattr(self.sender, 'profile') and self.sender.profile:
             if self.sender.profile.user_type == 'recruiter':
                 self.fields['message_type'].initial = 'job_invite'
             else:
@@ -216,7 +216,7 @@ class StartConversationForm(forms.Form):
         
         if self.sender:
             # Filter recipients based on sender type
-            if hasattr(self.sender, 'profile') and self.sender.profile.user_type == 'recruiter':
+            if hasattr(self.sender, 'profile') and self.sender.profile and self.sender.profile.user_type == 'recruiter':
                 # Recruiters can message job seekers
                 self.fields['recipient'].queryset = User.objects.filter(
                     profile__user_type='regular'
@@ -231,6 +231,9 @@ class StartConversationForm(forms.Form):
                 ).exclude(id=self.sender.id)
                 self.fields['related_job'].queryset = None
                 self.fields['related_job'].widget = forms.HiddenInput()
+        else:
+            # If no sender, show all users except current user
+            self.fields['recipient'].queryset = User.objects.all()
     
     def clean_initial_message(self):
         message = self.cleaned_data.get('initial_message')
