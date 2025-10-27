@@ -39,6 +39,7 @@
             <a class="nav-link" href="{% url 'recruiter:kanban' %}">Pipeline</a>
             <a class="nav-link" href="{% url 'recruiter:candidate_search' %}">Find Candidates</a>
             {% elif user.profile.user_type == 'regular' %}
+            <a class="nav-link" href="{% url 'jobs.recommendations' %}">Recommended Jobs</a>
             <a class="nav-link" href="{% url 'applications:my_applications' %}">My Applications</a>
             <a class="nav-link" href="{% url 'profiles:profile_detail' %}">My Profile</a>
           {% endif %}

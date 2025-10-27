@@ -222,8 +222,19 @@ def recommendations(request):
         messages.error(request, 'Only job seekers can view recommended jobs.')
         return redirect('jobs.index')
 
-    user_skills_raw = (profile.skills or '')
-    user_skills = [s.strip().lower() for s in user_skills_raw.split(',') if s.strip()]
+    # Get user skills from both the skills_text field and Skill objects
+    user_skills = []
+    
+    # Get skills from skills_text field (legacy)
+    if profile.skills_text:
+        user_skills.extend([s.strip().lower() for s in profile.skills_text.split(',') if s.strip()])
+    
+    # Get skills from Skill objects (new model)
+    skill_objects = profile.skills.all()
+    user_skills.extend([skill.name.strip().lower() for skill in skill_objects])
+    
+    # Remove duplicates
+    user_skills = list(set(user_skills))
 
     jobs_qs = Job.objects.filter(is_active=True)
 
