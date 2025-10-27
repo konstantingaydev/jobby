@@ -38,9 +38,9 @@
             <a class="nav-link" href="{% url 'recruiter:dashboard' %}">Dashboard</a>
             <a class="nav-link" href="{% url 'recruiter:kanban' %}">Pipeline</a>
             <a class="nav-link" href="{% url 'recruiter:candidate_search' %}">Find Candidates</a>
-          {% elif user.profile.user_type == 'regular' %}
+            {% elif user.profile.user_type == 'regular' %}
             <a class="nav-link" href="{% url 'applications:my_applications' %}">My Applications</a>
-            <a class="nav-link" href="{% url 'accounts.profile_detail' %}">My Profile</a>
+            <a class="nav-link" href="{% url 'profiles:profile_detail' %}">My Profile</a>
           {% endif %}
           <a class="nav-link" href="{% url 'accounts.logout' %}">Logout ({{ user.username }})</a>
         {% else %}

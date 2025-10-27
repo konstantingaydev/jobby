@@ -26,23 +26,23 @@
                                     <i class="fas fa-edit"></i> Edit Profile
                                 </button>
                                 <ul class="dropdown-menu">
-                                    <li><a class="dropdown-item" href="{% url 'accounts.profile_edit' %}">
+                                    <li><a class="dropdown-item" href="{% url 'profiles:profile_edit' %}">
                                         <i class="fas fa-user-edit"></i> Basic Info
                                     </a></li>
-                                    <li><a class="dropdown-item" href="{% url 'accounts.manage_skills' %}">
+                                    <li><a class="dropdown-item" href="{% url 'profiles:manage_skills' %}">
                                         <i class="fas fa-cogs"></i> Skills
                                     </a></li>
-                                    <li><a class="dropdown-item" href="{% url 'accounts.manage_education' %}">
+                                    <li><a class="dropdown-item" href="{% url 'profiles:manage_education' %}">
                                         <i class="fas fa-graduation-cap"></i> Education
                                     </a></li>
-                                    <li><a class="dropdown-item" href="{% url 'accounts.manage_experience' %}">
+                                    <li><a class="dropdown-item" href="{% url 'profiles:manage_experience' %}">
                                         <i class="fas fa-briefcase"></i> Experience
                                     </a></li>
-                                    <li><a class="dropdown-item" href="{% url 'accounts.manage_projects' %}">
+                                    <li><a class="dropdown-item" href="{% url 'profiles:manage_projects' %}">
                                         <i class="fas fa-project-diagram"></i> Projects
                                     </a></li>
                                     <li><hr class="dropdown-divider"></li>
-                                    <li><a class="dropdown-item" href="{% url 'accounts.privacy_settings' %}">
+                                    <li><a class="dropdown-item" href="{% url 'profiles:privacy_settings' %}">
                                         <i class="fas fa-shield-alt"></i> Privacy Settings
                                     </a></li>
                                 </ul>
@@ -56,7 +56,7 @@
                         {% else %}
                             {% if is_own_profile %}
                                 <p class="text-muted mb-0">
-                                    <em>No professional summary added yet. <a href="{% url 'accounts.profile_edit' %}">Add one now</a></em>
+                                    <em>No professional summary added yet. <a href="{% url 'profiles:profile_edit' %}">Add one now</a></em>
                                 </p>
                             {% endif %}
                         {% endif %}
@@ -114,7 +114,7 @@
                     <div class="card-header d-flex justify-content-between align-items-center">
                         <h5 class="mb-0"><i class="fas fa-cogs"></i> Skills</h5>
                         {% if is_own_profile %}
-                            <a href="{% url 'accounts.manage_skills' %}" class="btn btn-sm btn-outline-primary">
+                            <a href="{% url 'profiles:manage_skills' %}" class="btn btn-sm btn-outline-primary">
                                 <i class="fas fa-edit"></i> {% if profile.skills.all %}Edit{% else %}Add{% endif %}
                             </a>
                         {% endif %}
@@ -134,7 +134,7 @@
                                 <i class="fas fa-cogs fa-2x text-muted mb-3"></i>
                                 <p class="text-muted mb-0">
                                     {% if is_own_profile %}
-                                        No skills added yet. <a href="{% url 'accounts.manage_skills' %}">Add your first skill</a>
+                                        No skills added yet. <a href="{% url 'profiles:manage_skills' %}">Add your first skill</a>
                                     {% else %}
                                         No skills listed
                                     {% endif %}
@@ -147,13 +147,13 @@
                 <div class="card mb-4">
                     <div class="card-header d-flex justify-content-between align-items-center">
                         <h5 class="mb-0"><i class="fas fa-cogs"></i> Skills <span class="badge bg-warning text-dark ms-2">Hidden</span></h5>
-                        <a href="{% url 'accounts.privacy_settings' %}" class="btn btn-sm btn-outline-warning">
+                            <a href="{% url 'profiles:privacy_settings' %}" class="btn btn-sm btn-outline-warning">
                             <i class="fas fa-eye-slash"></i> Show Section
                         </a>
                     </div>
                     <div class="card-body">
                         <div class="alert alert-warning">
-                            <i class="fas fa-eye-slash"></i> This section is hidden from other users. <a href="{% url 'accounts.privacy_settings' %}">Update privacy settings</a> to make it visible.
+                            <i class="fas fa-eye-slash"></i> This section is hidden from other users. <a href="{% url 'profiles:privacy_settings' %}">Update privacy settings</a> to make it visible.
                         </div>
                     </div>
                 </div>
@@ -165,7 +165,7 @@
                     <div class="card-header d-flex justify-content-between align-items-center">
                         <h5 class="mb-0"><i class="fas fa-graduation-cap"></i> Education</h5>
                         {% if is_own_profile %}
-                            <a href="{% url 'accounts.manage_education' %}" class="btn btn-sm btn-outline-primary">
+                            <a href="{% url 'profiles:manage_education' %}" class="btn btn-sm btn-outline-primary">
                                 <i class="fas fa-edit"></i> {% if profile.education.all %}Edit{% else %}Add{% endif %}
                             </a>
                         {% endif %}
@@ -193,7 +193,7 @@
                                 <i class="fas fa-graduation-cap fa-2x text-muted mb-3"></i>
                                 <p class="text-muted mb-0">
                                     {% if is_own_profile %}
-                                        No education added yet. <a href="{% url 'accounts.manage_education' %}">Add your education</a>
+                                        No education added yet. <a href="{% url 'profiles:manage_education' %}">Add your education</a>
                                     {% else %}
                                         No education listed
                                     {% endif %}
@@ -206,13 +206,13 @@
                 <div class="card mb-4">
                     <div class="card-header d-flex justify-content-between align-items-center">
                         <h5 class="mb-0"><i class="fas fa-graduation-cap"></i> Education <span class="badge bg-warning text-dark ms-2">Hidden</span></h5>
-                        <a href="{% url 'accounts.privacy_settings' %}" class="btn btn-sm btn-outline-warning">
+                            <a href="{% url 'profiles:privacy_settings' %}" class="btn btn-sm btn-outline-warning">
                             <i class="fas fa-eye-slash"></i> Show Section
                         </a>
                     </div>
                     <div class="card-body">
                         <div class="alert alert-warning">
-                            <i class="fas fa-eye-slash"></i> This section is hidden from other users. <a href="{% url 'accounts.privacy_settings' %}">Update privacy settings</a> to make it visible.
+                            <i class="fas fa-eye-slash"></i> This section is hidden from other users. <a href="{% url 'profiles:privacy_settings' %}">Update privacy settings</a> to make it visible.
                         </div>
                     </div>
                 </div>
@@ -224,7 +224,7 @@
                     <div class="card-header d-flex justify-content-between align-items-center">
                         <h5 class="mb-0"><i class="fas fa-briefcase"></i> Work Experience</h5>
                         {% if is_own_profile %}
-                            <a href="{% url 'accounts.manage_experience' %}" class="btn btn-sm btn-outline-primary">
+                            <a href="{% url 'profiles:manage_experience' %}" class="btn btn-sm btn-outline-primary">
                                 <i class="fas fa-edit"></i> {% if profile.work_experience.all %}Edit{% else %}Add{% endif %}
                             </a>
                         {% endif %}
@@ -250,7 +250,7 @@
                                 <i class="fas fa-briefcase fa-2x text-muted mb-3"></i>
                                 <p class="text-muted mb-0">
                                     {% if is_own_profile %}
-                                        No work experience added yet. <a href="{% url 'accounts.manage_experience' %}">Add your experience</a>
+                                        No work experience added yet. <a href="{% url 'profiles:manage_experience' %}">Add your experience</a>
                                     {% else %}
                                         No work experience listed
                                     {% endif %}
@@ -263,13 +263,13 @@
                 <div class="card mb-4">
                     <div class="card-header d-flex justify-content-between align-items-center">
                         <h5 class="mb-0"><i class="fas fa-briefcase"></i> Work Experience <span class="badge bg-warning text-dark ms-2">Hidden</span></h5>
-                        <a href="{% url 'accounts.privacy_settings' %}" class="btn btn-sm btn-outline-warning">
+                            <a href="{% url 'profiles:privacy_settings' %}" class="btn btn-sm btn-outline-warning">
                             <i class="fas fa-eye-slash"></i> Show Section
                         </a>
                     </div>
                     <div class="card-body">
                         <div class="alert alert-warning">
-                            <i class="fas fa-eye-slash"></i> This section is hidden from other users. <a href="{% url 'accounts.privacy_settings' %}">Update privacy settings</a> to make it visible.
+                            <i class="fas fa-eye-slash"></i> This section is hidden from other users. <a href="{% url 'profiles:privacy_settings' %}">Update privacy settings</a> to make it visible.
                         </div>
                     </div>
                 </div>
@@ -279,8 +279,8 @@
             <div class="card mb-4">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h5 class="mb-0"><i class="fas fa-project-diagram"></i> Projects</h5>
-                    {% if is_own_profile %}
-                        <a href="{% url 'accounts.manage_projects' %}" class="btn btn-sm btn-outline-primary">
+                        {% if is_own_profile %}
+                        <a href="{% url 'profiles:manage_projects' %}" class="btn btn-sm btn-outline-primary">
                             <i class="fas fa-edit"></i> {% if profile.projects.all %}Edit{% else %}Add{% endif %}
                         </a>
                     {% endif %}
@@ -323,7 +323,7 @@
                             <i class="fas fa-project-diagram fa-2x text-muted mb-3"></i>
                             <p class="text-muted mb-0">
                                 {% if is_own_profile %}
-                                    No projects added yet. <a href="{% url 'accounts.manage_projects' %}">Add your first project</a>
+                                    No projects added yet. <a href="{% url 'profiles:manage_projects' %}">Add your first project</a>
                                 {% else %}
                                     No projects listed
                                 {% endif %}
@@ -341,13 +341,13 @@
                         <h5>Complete Your Profile</h5>
                         <p class="text-muted mb-4">Add your skills, education, work experience, and projects to help recruiters find you!</p>
                         <div class="d-flex justify-content-center gap-2">
-                            <a href="{% url 'accounts.profile_edit' %}" class="btn btn-primary">
+                            <a href="{% url 'profiles:profile_edit' %}" class="btn btn-primary">
                                 <i class="fas fa-user-edit"></i> Edit Basic Info
                             </a>
-                            <a href="{% url 'accounts.manage_skills' %}" class="btn btn-outline-primary">
+                            <a href="{% url 'profiles:manage_skills' %}" class="btn btn-outline-primary">
                                 <i class="fas fa-cogs"></i> Add Skills
                             </a>
-                            <a href="{% url 'accounts.manage_projects' %}" class="btn btn-outline-success">
+                            <a href="{% url 'profiles:manage_projects' %}" class="btn btn-outline-success">
                                 <i class="fas fa-project-diagram"></i> Add Projects
                             </a>
                         </div>
