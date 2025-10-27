@@ -1,5 +1,8 @@
-from django.db import models
-from django.contrib.auth.models import User
+"""Accounts app models.
 
-# Create your models here.
-# Profile models have been moved to the profiles app
+This file intentionally does not define a Profile model to avoid clashing with
+the canonical Profile implementation in the `profiles` app. Import the
+Profile where needed from `profiles.models`.
+"""
+
+from profiles.models import Profile  # re-export for import compatibility

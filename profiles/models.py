@@ -89,7 +89,7 @@ class Education(models.Model):
     
     def __str__(self):
         return f"{self.degree} at {self.institution}"
-
+    
 class WorkExperience(models.Model):
     profile = models.ForeignKey(Profile, on_delete=models.CASCADE, related_name='work_experience')
     company = models.CharField(max_length=200)
@@ -105,7 +105,7 @@ class WorkExperience(models.Model):
     
     def __str__(self):
         return f"{self.position} at {self.company}"
-
+    
 class Project(models.Model):
     profile = models.ForeignKey(Profile, on_delete=models.CASCADE, related_name='projects')
     title = models.CharField(max_length=200)
