@@ -43,6 +43,7 @@
             <a class="nav-link" href="{% url 'applications:my_applications' %}">My Applications</a>
             <a class="nav-link" href="{% url 'profiles:profile_detail' %}">My Profile</a>
           {% endif %}
+          <a class="nav-link" href="{% url 'messaging:internal_messages' %}"> <i class="fas fa-comments"></i> Messages </a>
           <a class="nav-link" href="{% url 'accounts.logout' %}">Logout ({{ user.username }})</a>
         {% else %}
           <a class="nav-link" href="{% url 'accounts.login' %}">Login</a>
