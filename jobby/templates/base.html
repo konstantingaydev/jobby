@@ -35,7 +35,9 @@
         {% load profile_extras %}
         {% if user.is_authenticated %}
           {% if user|has_profile and user.profile.user_type == 'recruiter' %}
-            <a class="nav-link" href="{% url 'accounts.recruiter_dashboard' %}">Dashboard</a>
+            <a class="nav-link" href="{% url 'recruiter:dashboard' %}">Dashboard</a>
+            <a class="nav-link" href="{% url 'recruiter:kanban' %}">Pipeline</a>
+            <a class="nav-link" href="{% url 'recruiter:candidate_search' %}">Find Candidates</a>
           {% elif user.profile.user_type == 'regular' %}
             <a class="nav-link" href="{% url 'applications:my_applications' %}">My Applications</a>
             <a class="nav-link" href="{% url 'accounts.profile_detail' %}">My Profile</a>

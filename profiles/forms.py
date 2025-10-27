@@ -1,14 +1,16 @@
 from django import forms
+from django.contrib.auth.models import User
 from .models import Profile, Skill, Education, WorkExperience, Project
 
 class ProfileForm(forms.ModelForm):
     class Meta:
         model = Profile
-        fields = ['headline', 'bio', 'phone', 'location', 'linkedin_url', 'github_url', 'portfolio_url']
+        fields = ['headline', 'bio', 'phone', 'email', 'location', 'linkedin_url', 'github_url', 'portfolio_url']
         widgets = {
             'headline': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'e.g., Software Engineer | Full Stack Developer'}),
             'bio': forms.Textarea(attrs={'class': 'form-control', 'rows': 4, 'placeholder': 'Tell recruiters about yourself...'}),
             'phone': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '+1 (555) 123-4567'}),
+            'email': forms.EmailInput(attrs={'class': 'form-control', 'placeholder': 'your.email@example.com'}),
             'location': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'City, State'}),
             'linkedin_url': forms.URLInput(attrs={'class': 'form-control', 'placeholder': 'https://linkedin.com/in/yourprofile'}),
             'github_url': forms.URLInput(attrs={'class': 'form-control', 'placeholder': 'https://github.com/yourusername'}),

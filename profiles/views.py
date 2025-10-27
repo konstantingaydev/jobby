@@ -39,8 +39,10 @@ def profile_edit(request):
         form = ProfileForm(request.POST, instance=profile)
         if form.is_valid():
             form.save()
-            messages.success(request, 'Profile updated successfully!')
+            messages.success(request, f'Profile updated successfully! Email: {profile.email}')
             return redirect('profiles:profile_detail')
+        else:
+            messages.error(request, f'Form errors: {form.errors}')
     else:
         form = ProfileForm(instance=profile)
     
