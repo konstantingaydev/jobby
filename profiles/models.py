@@ -16,6 +16,7 @@ class Profile(models.Model):
     headline = models.CharField(max_length=200, blank=True, help_text="Professional headline or title")
     bio = models.TextField(blank=True, help_text="Brief professional summary")
     phone = models.CharField(max_length=20, blank=True)
+    email = models.EmailField(blank=True, help_text="Email address for recruiters to contact you")
     location = models.CharField(max_length=255, blank=True, help_text='Candidate location')
     
     # Links

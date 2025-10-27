@@ -27,6 +27,11 @@ def send_email_to_candidate(request, candidate_id):
         messages.error(request, 'Invalid candidate.')
         return redirect('recruiter:candidate_search')
     
+    # Check if candidate has an email address
+    if not candidate.email:
+        messages.error(request, f'{candidate.get_full_name() or candidate.username} does not have an email address on file. Please use the messaging system instead.')
+        return redirect('recruiter:candidate_search')
+    
     if request.method == 'POST':
         form = EmailCandidateForm(request.POST, recruiter=request.user, candidate=candidate)
         if form.is_valid():
@@ -219,21 +224,26 @@ def internal_messages(request):
             ).distinct()
         
         if unread_only:
-            conversations = conversations.filter(
-                messages__sender__in=conversations.values_list('participants', flat=True).exclude(
-                    messages__sender=request.user
-                ),
-                messages__read_at__isnull=True
-            ).distinct()
+            # Get conversations with unread messages for the current user
+            unread_conversation_ids = InternalMessage.objects.filter(
+                recipient=request.user,
+                read_at__isnull=True,
+                is_deleted=False
+            ).values_list('conversation_id', flat=True).distinct()
+            conversations = conversations.filter(id__in=unread_conversation_ids)
     
     # Add unread counts and latest messages
+    conversation_list = []
     for conversation in conversations:
         conversation.unread_count = conversation.get_unread_count(request.user)
         conversation.latest_message = conversation.get_latest_message()
         conversation.other_participant = conversation.get_other_participant(request.user)
+        # Only include conversations that have messages
+        if conversation.latest_message:
+            conversation_list.append(conversation)
     
     context = {
-        'conversations': conversations,
+        'conversations': conversation_list,
         'search_form': search_form,
         'template_data': {'title': 'Messages'}
     }
@@ -253,7 +263,7 @@ def conversation_detail(request, conversation_id):
     ).update(read_at=timezone.now())
     
     # Get messages for this conversation
-    messages = conversation.messages.filter(is_deleted=False).order_by('created_at')
+    conversation_messages = conversation.messages.filter(is_deleted=False).order_by('created_at')
     
     # Handle new message
     if request.method == 'POST':
@@ -289,7 +299,7 @@ def conversation_detail(request, conversation_id):
     context = {
         'conversation': conversation,
         'other_participant': other_participant,
-        'messages': messages,
+        'messages': conversation_messages,
         'form': form,
         'template_data': {'title': f'Conversation with {other_participant.get_full_name() or other_participant.username}'}
     }
@@ -342,7 +352,9 @@ def start_conversation(request, user_id=None):
                     sender=request.user,
                     recipient=recipient,
                     content=initial_message,
-                    message_type=message_type
+                    message_type=message_type,
+                    attachment_url=form.cleaned_data.get('attachment_url', ''),
+                    attachment_name=form.cleaned_data.get('attachment_name', '')
                 )
                 
                 # Create notification
@@ -397,11 +409,27 @@ def delete_conversation(request, conversation_id):
     conversation = get_object_or_404(Conversation, id=conversation_id, participants=request.user, is_active=True)
     
     if request.method == 'POST':
-        # Mark conversation as inactive
-        conversation.is_active = False
-        conversation.save()
+        try:
+            with transaction.atomic():
+                # Mark conversation as inactive
+                conversation.is_active = False
+                conversation.save()
+                
+                # Mark all messages in this conversation as deleted for this user
+                InternalMessage.objects.filter(
+                    Q(conversation=conversation) & (Q(sender=request.user) | Q(recipient=request.user))
+                ).update(is_deleted=True)
+                
+                # Mark all notifications as read for this user
+                MessageNotification.objects.filter(
+                    user=request.user,
+                    message__conversation=conversation
+                ).update(is_read=True)
+            
+            messages.success(request, 'Conversation deleted successfully.')
+        except Exception as e:
+            messages.error(request, f'Failed to delete conversation: {str(e)}')
         
-        messages.success(request, 'Conversation deleted successfully.')
         return redirect('messaging:internal_messages')
     
     context = {
