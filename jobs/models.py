@@ -1,6 +1,9 @@
 from django.db import models
 from django.contrib.auth.models import User
 from django.utils import timezone
+import urllib.request
+import urllib.parse
+import json
 
 class Job(models.Model):
     EMPLOYMENT_TYPE_CHOICES = [
@@ -22,6 +25,9 @@ class Job(models.Model):
     title = models.CharField(max_length=255, help_text="Job title", default="")
     company_name = models.CharField(max_length=255, help_text="Company name", default="")
     location = models.CharField(max_length=255, help_text="Job location", default="")
+    # Optional geographic coordinates (populated later via geocoding)
+    latitude = models.FloatField(null=True, blank=True, help_text="Latitude of job location")
+    longitude = models.FloatField(null=True, blank=True, help_text="Longitude of job location")
     salary_min = models.IntegerField(null=True, blank=True, help_text="Minimum salary")
     salary_max = models.IntegerField(null=True, blank=True, help_text="Maximum salary")
     employment_type = models.CharField(max_length=20, choices=EMPLOYMENT_TYPE_CHOICES, default='full-time')
@@ -66,3 +72,55 @@ class Job(models.Model):
         if self.skills_required:
             return [skill.strip() for skill in self.skills_required.split(',') if skill.strip()]
         return []
+
+    def _geocode_location(self, location):
+        """Try to geocode a free-text location using Nominatim.
+
+        Returns (lat, lon) or None on failure. This is best-effort and
+        failures are silently ignored to avoid blocking saves.
+        """
+        if not location:
+            return None
+        try:
+            base = 'https://nominatim.openstreetmap.org/search?format=json&limit=1&q='
+            url = base + urllib.parse.quote(location)
+            req = urllib.request.Request(url, headers={'User-Agent': 'Jobby/1.0 (admin@jobby.example)'} )
+            with urllib.request.urlopen(req, timeout=8) as resp:
+                data = resp.read().decode('utf-8')
+                arr = json.loads(data)
+                if arr:
+                    return float(arr[0]['lat']), float(arr[0]['lon'])
+        except Exception:
+            # Network errors, rate-limiting, or parsing issues are ignored.
+            return None
+        return None
+
+    def save(self, *args, **kwargs):
+        """Override save to attempt geocoding when location changes or coords are missing."""
+        try:
+            old_location = None
+            if self.pk:
+                try:
+                    old_location = Job.objects.values_list('location', flat=True).get(pk=self.pk)
+                except Job.DoesNotExist:
+                    old_location = None
+
+            need_geocode = False
+            if not self.pk:
+                # new object
+                need_geocode = True
+            else:
+                if (self.latitude is None or self.longitude is None):
+                    need_geocode = True
+                if old_location is not None and old_location != (self.location or ''):
+                    need_geocode = True
+
+            if need_geocode and (self.location or '').strip():
+                coords = self._geocode_location(self.location)
+                if coords:
+                    self.latitude, self.longitude = coords
+        except Exception:
+            # Ensure save proceeds even if geocoding fails
+            pass
+
+        super().save(*args, **kwargs)

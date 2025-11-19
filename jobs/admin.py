@@ -2,7 +2,7 @@ from django.contrib import admin
 from .models import Job
 
 class JobAdmin(admin.ModelAdmin):
-    list_display = ['title', 'company_name', 'location', 'employment_type', 'experience_level', 'is_active', 'created_at']
+    list_display = ['title', 'company_name', 'location', 'latitude', 'longitude', 'employment_type', 'experience_level', 'is_active', 'created_at']
     list_filter = ['employment_type', 'experience_level', 'is_active', 'created_at']
     search_fields = ['title', 'company_name', 'location', 'description']
     ordering = ['-created_at']
@@ -10,7 +10,7 @@ class JobAdmin(admin.ModelAdmin):
     
     fieldsets = (
         ('Basic Information', {
-            'fields': ('title', 'company_name', 'location', 'image')
+            'fields': ('title', 'company_name', 'location', 'latitude', 'longitude', 'image')
         }),
         ('Job Details', {
             'fields': ('employment_type', 'experience_level', 'salary_min', 'salary_max')
@@ -30,6 +30,7 @@ class JobAdmin(admin.ModelAdmin):
     def save_model(self, request, obj, form, change):
         if not change:  # If creating a new object
             obj.posted_by = request.user
+        # Let model.save handle geocoding if coords are missing or location changed
         super().save_model(request, obj, form, change)
 
 admin.site.register(Job, JobAdmin)

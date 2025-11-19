@@ -1,0 +1,236 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css" crossorigin="anonymous"/>
+<div class="container my-4">
+  <h2>Jobs Map</h2>
+  <p>View job postings geographically. Click markers to open job details.</p>
+  <div class="mb-3 d-flex gap-2 align-items-center">
+    <div>
+      <label for="commute-radius" class="form-label mb-0">Commute radius (miles)</label>
+      <input id="commute-radius" type="number" min="1" step="1" value="10" class="form-control" style="width:110px;" />
+    </div>
+    <div class="pt-2">
+      <button id="use-my-location" class="btn btn-outline-primary">Use My Location</button>
+      <button id="apply-radius" class="btn btn-primary">Apply</button>
+      <button id="reset-radius" class="btn btn-outline-secondary">Reset</button>
+    </div>
+    <div class="ms-auto text-end">
+      <small id="map-status" class="text-muted">Loading map...</small>
+    </div>
+  </div>
+  <div id="map" style="height:600px; border: 1px solid #ddd;"></div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js" crossorigin="anonymous"></script>
+<script>
+(async function() {
+  console.log('map script starting');
+  try {
+    if (typeof L === 'undefined') {
+      console.warn('Leaflet (L) is undefined - attempting fallback load');
+      // Try dynamic fallback to another CDN
+      await new Promise((resolve, reject) => {
+        const s = document.createElement('script');
+        s.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+        s.crossOrigin = 'anonymous';
+        s.onload = resolve;
+        s.onerror = reject;
+        document.head.appendChild(s);
+      }).catch(() => {});
+      if (typeof L === 'undefined') {
+        console.error('Leaflet (L) is still undefined after fallback');
+        document.getElementById('map-status').innerText = 'Map failed to load: Leaflet not available.';
+        return;
+      }
+    }
+  } catch(e) {
+    console.error('Error checking/loading Leaflet', e);
+  }
+  const map = L.map('map').setView([39.5, -98.35], 4); // center of contiguous US
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19,
+    attribution: '&copy; OpenStreetMap contributors'
+  }).addTo(map);
+
+  // Add user's location if available
+  function addUserMarker(lat, lng) {
+    const userMarker = L.circleMarker([lat, lng], {radius:8, color:'#007bff', fillColor:'#007bff', fillOpacity:0.9}).addTo(map);
+    userMarker.bindPopup('You are here').openPopup();
+  }
+
+  if (navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition(function(pos) {
+      const lat = pos.coords.latitude;
+      const lng = pos.coords.longitude;
+      map.setView([lat, lng], 12);
+      addUserMarker(lat, lng);
+    }, function(err){
+      // ignore, keep default view
+    });
+  }
+
+  // Simple client-side geocode cache
+  function cacheKey(location) { return 'geo:'+location; }
+  function getCached(location) {
+    try {
+      const raw = localStorage.getItem(cacheKey(location));
+      if (!raw) return null;
+      return JSON.parse(raw);
+    } catch(e){ return null; }
+  }
+  function setCached(location, value) {
+    try { localStorage.setItem(cacheKey(location), JSON.stringify(value)); } catch(e) {}
+  }
+
+  async function geocode(location) {
+    const cached = getCached(location);
+    if (cached) return cached; // {lat, lon}
+
+    const url = 'https://nominatim.openstreetmap.org/search?format=json&limit=1&q=' + encodeURIComponent(location);
+    try {
+      // Nominatim usage policy: ideal to set an identifiable User-Agent, but browsers won't allow. Keep requests modest.
+      const res = await fetch(url, {headers:{'Accept':'application/json'}});
+      const json = await res.json();
+      if (json && json.length) {
+        const lat = parseFloat(json[0].lat);
+        const lon = parseFloat(json[0].lon);
+        const out = {lat: lat, lon: lon};
+        setCached(location, out);
+        return out;
+      }
+    } catch(e) {
+      console.error('geocode error', e);
+    }
+    return null;
+  }
+
+  // Fetch jobs and add markers (prefer server-side coords; fall back to geocoding)
+  try {
+    const resp = await fetch('{% url "jobs.geo_json" %}');
+    const data = await resp.json();
+    const jobs = data.jobs || [];
+    console.log('jobs payload:', jobs);
+    document.getElementById('map-status').innerText = `Loaded ${jobs.length} jobs.`;
+
+    // Process sequentially to avoid geocoding bursts
+    // We'll store markers so we can filter them by commute radius
+    const allMarkers = []; // {marker, lat, lon}
+
+    for (let i=0;i<jobs.length;i++) {
+      const job = jobs[i];
+      const loc = job.location || '';
+      let lat = job.latitude;
+      let lon = job.longitude;
+
+      if ((lat === null || lon === null || lat === undefined || lon === undefined) && loc) {
+        // fall back to geocoding
+        const coords = await (async () => {
+          const cached = getCached(loc);
+          if (cached) return cached;
+          const c = await geocode(loc);
+          await new Promise(r => setTimeout(r, 200));
+          return c;
+        })();
+        if (coords) { lat = coords.lat; lon = coords.lon; }
+      }
+
+      if (lat == null || lon == null) continue;
+
+      const marker = L.marker([lat, lon]);
+      const popup = `<b>${escapeHtml(job.title)}</b><br>${escapeHtml(job.company_name)}<br>${escapeHtml(job.location)}<br><a href="${job.url}">View job</a>`;
+      marker.bindPopup(popup);
+      // add to list but don't necessarily add to map yet; default: show all
+      marker.addTo(map);
+      allMarkers.push({marker, lat: parseFloat(lat), lon: parseFloat(lon)});
+    }
+    console.log('markers loaded:', allMarkers.length);
+    if (allMarkers.length === 0) document.getElementById('map-status').innerText += ' No markers added.';
+
+    // Radius filtering utilities
+    function toRad(v){ return v * Math.PI / 180; }
+    function distanceMiles(lat1, lon1, lat2, lon2){
+      // Haversine in miles
+      const R = 3958.8; // Earth radius in miles
+      const dLat = toRad(lat2 - lat1);
+      const dLon = toRad(lon2 - lon1);
+      const a = Math.sin(dLat/2)*Math.sin(dLat/2) + Math.cos(toRad(lat1))*Math.cos(toRad(lat2))*Math.sin(dLon/2)*Math.sin(dLon/2);
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+      return R * c;
+    }
+
+    let currentCircle = null;
+    let currentCenter = null; // {lat, lon}
+
+    function applyRadiusFilter(centerLat, centerLon, miles){
+      if (!centerLat || !centerLon || !miles) return;
+      // Draw/update circle
+      if (currentCircle) { map.removeLayer(currentCircle); }
+      currentCircle = L.circle([centerLat, centerLon], {radius: miles * 1609.344, color: '#007bff', fillOpacity: 0.05}).addTo(map);
+      currentCenter = {lat: centerLat, lon: centerLon};
+      let count = 0;
+      for (const obj of allMarkers){
+        const d = distanceMiles(centerLat, centerLon, obj.lat, obj.lon);
+        if (d <= miles){
+          if (!map.hasLayer(obj.marker)) obj.marker.addTo(map);
+          count++;
+        } else {
+          if (map.hasLayer(obj.marker)) map.removeLayer(obj.marker);
+        }
+      }
+      document.getElementById('map-status').innerText = `Showing ${count} jobs within ${miles} miles.`;
+      // Center map to fit circle nicely
+      try { map.fitBounds(currentCircle.getBounds(), {maxZoom: 13}); } catch(e){}
+    }
+
+    function resetRadiusFilter(){
+      if (currentCircle) { map.removeLayer(currentCircle); currentCircle = null; }
+      currentCenter = null;
+      for (const obj of allMarkers) if (!map.hasLayer(obj.marker)) obj.marker.addTo(map);
+      document.getElementById('map-status').innerText = `Loaded ${allMarkers.length} jobs.`;
+    }
+
+    // Hook up UI buttons
+    document.getElementById('apply-radius').addEventListener('click', function(){
+      const miles = parseFloat(document.getElementById('commute-radius').value) || 0;
+      if (!currentCenter){
+        // try to use browser geolocation
+        if (navigator.geolocation){
+          navigator.geolocation.getCurrentPosition(function(p){
+            applyRadiusFilter(p.coords.latitude, p.coords.longitude, miles);
+          }, function(){ alert('Unable to determine your location. Click "Use My Location" or enter a center.'); });
+        } else {
+          alert('Geolocation not available. Use "Use My Location" or set coordinates manually.');
+        }
+      } else {
+        applyRadiusFilter(currentCenter.lat, currentCenter.lon, miles);
+      }
+    });
+
+    document.getElementById('use-my-location').addEventListener('click', function(){
+      if (!navigator.geolocation) { alert('Geolocation not available in your browser.'); return; }
+      navigator.geolocation.getCurrentPosition(function(p){
+        const miles = parseFloat(document.getElementById('commute-radius').value) || 0;
+        applyRadiusFilter(p.coords.latitude, p.coords.longitude, miles);
+      }, function(err){ alert('Unable to get location: ' + (err.message || err.code)); });
+    });
+
+    document.getElementById('reset-radius').addEventListener('click', function(){ resetRadiusFilter(); });
+  } catch(e) {
+    console.error('Error loading jobs', e);
+    try { document.getElementById('map-status').innerText = 'Error loading jobs: ' + e; } catch(err){}
+  }
+
+  function escapeHtml(str){
+    if (!str) return '';
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  }
+})();
+</script>
+
+{% endblock content %}

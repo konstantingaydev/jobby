@@ -9,6 +9,8 @@ from .models import Job
 from .forms import JobForm, JobSearchForm
 from profiles.models import Profile
 from django.contrib.auth.models import User
+from django.http import JsonResponse
+from django.urls import reverse
 
 def index(request):
     """Display all job postings with enhanced search and filtering capabilities"""
@@ -271,3 +273,31 @@ def recommendations(request):
     }
 
     return render(request, 'jobs/recommendations.html', {'template_data': template_data})
+
+
+def map_view(request):
+    """Render an interactive map showing job postings."""
+    template_data = {
+        'title': 'Jobs Map'
+    }
+    return render(request, 'jobs/map.html', {'template_data': template_data})
+
+
+def jobs_geo_json(request):
+    """Return JSON list of active jobs with basic info (no coordinates).
+
+    The frontend will geocode locations (cached client-side) to display markers.
+    """
+    jobs = Job.objects.filter(is_active=True)
+    data = []
+    for job in jobs:
+        data.append({
+            'id': job.id,
+            'title': job.title,
+            'company_name': job.company_name,
+            'location': job.location,
+            'latitude': job.latitude,
+            'longitude': job.longitude,
+            'url': reverse('jobs.show', args=[job.id])
+        })
+    return JsonResponse({'jobs': data})

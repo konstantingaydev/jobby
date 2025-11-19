@@ -9,4 +9,6 @@ urlpatterns = [
     path('recommendations/', views.recommendations, name='jobs.recommendations'),
     path('<int:id>/edit/', views.edit_job, name='jobs.edit'),
     path('<int:id>/delete/', views.delete_job, name='jobs.delete'),
+    path('map/', views.map_view, name='jobs.map'),
+    path('api/geo-jobs/', views.jobs_geo_json, name='jobs.geo_json'),
 ]
