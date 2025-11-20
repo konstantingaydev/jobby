@@ -21,7 +21,7 @@ class JobForm(forms.ModelForm):
             }),
             'location': forms.TextInput(attrs={
                 'class': 'form-control',
-                'placeholder': 'e.g., San Francisco, CA or Remote'
+                'placeholder': 'e.g., 123 Main St, San Francisco, CA or just San Francisco, CA'
             }),
             'salary_min': forms.NumberInput(attrs={
                 'class': 'form-control',
@@ -69,7 +69,7 @@ class JobForm(forms.ModelForm):
         labels = {
             'title': 'Job Title',
             'company_name': 'Company Name',
-            'location': 'Location',
+            'location': 'Job Location',
             'salary_min': 'Minimum Salary ($)',
             'salary_max': 'Maximum Salary ($)',
             'employment_type': 'Employment Type',
@@ -89,6 +89,7 @@ class JobForm(forms.ModelForm):
             'is_remote': 'Check if this is a remote position',
             'visa_sponsorship': 'Check if visa sponsorship is available',
             'image': 'Optional - upload a company logo or relevant image',
+            'location': 'Enter full address (recommended) or city name. The map will display this location accurately. For remote positions, check the "Remote Position" box below.',
             'is_active': 'Uncheck to temporarily hide this job posting'
         }
 

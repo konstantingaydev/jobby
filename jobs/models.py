@@ -82,10 +82,18 @@ class Job(models.Model):
         if not location:
             return None
         try:
+            import ssl
             base = 'https://nominatim.openstreetmap.org/search?format=json&limit=1&q='
             url = base + urllib.parse.quote(location)
-            req = urllib.request.Request(url, headers={'User-Agent': 'Jobby/1.0 (admin@jobby.example)'} )
-            with urllib.request.urlopen(req, timeout=8) as resp:
+            req = urllib.request.Request(url, headers={'User-Agent': 'Jobby/1.0 (admin@jobby.example)'})
+            
+            # Create SSL context that doesn't verify certificates (for development)
+            # In production, you should install proper certificates
+            ctx = ssl.create_default_context()
+            ctx.check_hostname = False
+            ctx.verify_mode = ssl.CERT_NONE
+            
+            with urllib.request.urlopen(req, timeout=8, context=ctx) as resp:
                 data = resp.read().decode('utf-8')
                 arr = json.loads(data)
                 if arr:
@@ -98,27 +106,32 @@ class Job(models.Model):
     def save(self, *args, **kwargs):
         """Override save to attempt geocoding when location changes or coords are missing."""
         try:
-            old_location = None
-            if self.pk:
-                try:
-                    old_location = Job.objects.values_list('location', flat=True).get(pk=self.pk)
-                except Job.DoesNotExist:
-                    old_location = None
-
-            need_geocode = False
-            if not self.pk:
-                # new object
-                need_geocode = True
+            # If the job is remote, clear coordinates
+            if self.is_remote:
+                self.latitude = None
+                self.longitude = None
             else:
-                if (self.latitude is None or self.longitude is None):
-                    need_geocode = True
-                if old_location is not None and old_location != (self.location or ''):
-                    need_geocode = True
+                old_location = None
+                if self.pk:
+                    try:
+                        old_location = Job.objects.values_list('location', flat=True).get(pk=self.pk)
+                    except Job.DoesNotExist:
+                        old_location = None
 
-            if need_geocode and (self.location or '').strip():
-                coords = self._geocode_location(self.location)
-                if coords:
-                    self.latitude, self.longitude = coords
+                need_geocode = False
+                if not self.pk:
+                    # new object
+                    need_geocode = True
+                else:
+                    if (self.latitude is None or self.longitude is None):
+                        need_geocode = True
+                    if old_location is not None and old_location != (self.location or ''):
+                        need_geocode = True
+
+                if need_geocode and (self.location or '').strip():
+                    coords = self._geocode_location(self.location)
+                    if coords:
+                        self.latitude, self.longitude = coords
         except Exception:
             # Ensure save proceeds even if geocoding fails
             pass

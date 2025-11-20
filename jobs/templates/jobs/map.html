@@ -20,6 +20,15 @@
     </div>
   </div>
   <div id="map" style="height:600px; border: 1px solid #ddd;"></div>
+  
+  <div class="mt-4">
+    <h4>Jobs by Distance <span id="distance-subtitle" class="text-muted small"></span></h4>
+    <div id="job-list" class="list-group">
+      <div class="list-group-item text-center text-muted">
+        <i class="fas fa-spinner fa-spin"></i> Loading jobs...
+      </div>
+    </div>
+  </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js" crossorigin="anonymous"></script>
@@ -59,10 +68,13 @@
     userMarker.bindPopup('You are here').openPopup();
   }
 
+  let userLocation = null;
+  
   if (navigator.geolocation) {
     navigator.geolocation.getCurrentPosition(function(pos) {
       const lat = pos.coords.latitude;
       const lng = pos.coords.longitude;
+      userLocation = {lat: lat, lon: lng};
       map.setView([lat, lng], 12);
       addUserMarker(lat, lng);
     }, function(err){
@@ -145,7 +157,90 @@
       allMarkers.push({marker, lat: parseFloat(lat), lon: parseFloat(lon)});
     }
     console.log('markers loaded:', allMarkers.length);
-    if (allMarkers.length === 0) document.getElementById('map-status').innerText += ' No markers added.';
+    if (allMarkers.length === 0) {
+      document.getElementById('map-status').innerText += ' No markers added.';
+      document.getElementById('job-list').innerHTML = '<div class="list-group-item text-center text-muted">No jobs available to display.</div>';
+    }
+
+    // Store job data with markers
+    const jobsData = jobs.map((job, idx) => {
+      if (idx < allMarkers.length) {
+        return {
+          ...job,
+          lat: allMarkers[idx].lat,
+          lon: allMarkers[idx].lon
+        };
+      }
+      return null;
+    }).filter(j => j !== null);
+
+    // Function to update job list
+    function updateJobList(centerLat, centerLon, filterRadius) {
+      const listElement = document.getElementById('job-list');
+      const subtitleElement = document.getElementById('distance-subtitle');
+      
+      if (!centerLat || !centerLon) {
+        // No user location yet
+        listElement.innerHTML = '<div class="list-group-item text-center text-muted"><i class="fas fa-map-marker-alt"></i> Click "Use My Location" to see distances</div>';
+        subtitleElement.textContent = '';
+        return;
+      }
+      
+      // Calculate distances for all jobs
+      const jobsWithDistance = jobsData.map(job => ({
+        ...job,
+        distance: distanceMiles(centerLat, centerLon, job.lat, job.lon)
+      }));
+      
+      // Filter by radius if specified
+      let filteredJobs = jobsWithDistance;
+      if (filterRadius && filterRadius > 0) {
+        filteredJobs = jobsWithDistance.filter(job => job.distance <= filterRadius);
+        subtitleElement.textContent = `(within ${filterRadius} miles)`;
+      } else {
+        subtitleElement.textContent = '(from your location)';
+      }
+      
+      // Sort by distance (smallest to largest)
+      filteredJobs.sort((a, b) => a.distance - b.distance);
+      
+      // Build HTML
+      if (filteredJobs.length === 0) {
+        listElement.innerHTML = '<div class="list-group-item text-center text-muted">No jobs found in the selected radius.</div>';
+        return;
+      }
+      
+      let html = '';
+      filteredJobs.forEach(job => {
+        const distanceText = job.distance < 1 
+          ? `${(job.distance * 5280).toFixed(0)} ft` 
+          : `${job.distance.toFixed(1)} mi`;
+        
+        html += `
+          <a href="${job.url}" class="list-group-item list-group-item-action">
+            <div class="d-flex w-100 justify-content-between align-items-start">
+              <div class="flex-grow-1">
+                <h6 class="mb-1">${escapeHtml(job.title)}</h6>
+                <p class="mb-1 text-muted small">${escapeHtml(job.company_name)}</p>
+                <p class="mb-0 text-muted small"><i class="fas fa-map-marker-alt"></i> ${escapeHtml(job.location)}</p>
+              </div>
+              <div class="text-end ms-3">
+                <span class="badge bg-primary">${distanceText}</span>
+              </div>
+            </div>
+          </a>
+        `;
+      });
+      
+      listElement.innerHTML = html;
+    }
+    
+    // Initial job list - check if user location was already obtained
+    if (userLocation && userLocation.lat && userLocation.lon) {
+      updateJobList(userLocation.lat, userLocation.lon, null);
+    } else {
+      updateJobList(null, null, null);
+    }
 
     // Radius filtering utilities
     function toRad(v){ return v * Math.PI / 180; }
@@ -181,6 +276,9 @@
       document.getElementById('map-status').innerText = `Showing ${count} jobs within ${miles} miles.`;
       // Center map to fit circle nicely
       try { map.fitBounds(currentCircle.getBounds(), {maxZoom: 13}); } catch(e){}
+      
+      // Update job list with filtered results
+      updateJobList(centerLat, centerLon, miles);
     }
 
     function resetRadiusFilter(){
@@ -188,6 +286,9 @@
       currentCenter = null;
       for (const obj of allMarkers) if (!map.hasLayer(obj.marker)) obj.marker.addTo(map);
       document.getElementById('map-status').innerText = `Loaded ${allMarkers.length} jobs.`;
+      
+      // Reset job list to show message
+      updateJobList(null, null, null);
     }
 
     // Hook up UI buttons

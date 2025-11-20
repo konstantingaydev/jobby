@@ -1,6 +1,9 @@
 {% extends 'base.html' %}
 {% block content %}
 {% load static %}
+{% if not template_data.job.is_remote and template_data.job.latitude and template_data.job.longitude %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css" crossorigin="anonymous"/>
+{% endif %}
 <div class="p-3">
   <div class="container">
     <div class="row mt-3">
@@ -36,6 +39,9 @@
                 <p class="mb-2">
                   <i class="fas fa-map-marker-alt text-primary"></i>
                   <strong>Location:</strong> {{ template_data.job.location }}
+                  {% if template_data.job.is_remote %}
+                    <span class="badge bg-success ms-1">Remote</span>
+                  {% endif %}
                 </p>
                 <p class="mb-2">
                   <i class="fas fa-briefcase text-primary"></i>
@@ -53,6 +59,16 @@
                 </p>
               </div>
             </div>
+            
+            {% if not template_data.job.is_remote and template_data.job.latitude and template_data.job.longitude %}
+            <div class="mb-4">
+              <h5 class="mb-3">Job Location</h5>
+              <p class="text-muted mb-2">
+                <i class="fas fa-map-marker-alt"></i> {{ template_data.job.location }}
+              </p>
+              <div id="job-location-map" style="height: 450px; border: 1px solid #ddd; border-radius: 0.375rem;"></div>
+            </div>
+            {% endif %}
             
             <div class="mb-4">
               <h5>Job Description</h5>
@@ -116,7 +132,7 @@
                   </div>
                 {% endif %}
               {% else %}
-                <a href="{% url 'accounts:login' %}" class="btn btn-primary btn-lg">
+                <a href="{% url 'accounts.login' %}" class="btn btn-primary btn-lg">
                   <i class="fas fa-sign-in-alt"></i> Login to Apply
                 </a>
               {% endif %}
@@ -137,6 +153,69 @@
 {% endblock content %}
 
 {% block extra_js %}
+{% if not template_data.job.is_remote and template_data.job.latitude and template_data.job.longitude %}
+<script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js" crossorigin="anonymous"></script>
+<script>
+(async function() {
+  console.log('Job location map script starting');
+  try {
+    if (typeof L === 'undefined') {
+      console.warn('Leaflet (L) is undefined - attempting fallback load');
+      await new Promise((resolve, reject) => {
+        const s = document.createElement('script');
+        s.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+        s.crossOrigin = 'anonymous';
+        s.onload = resolve;
+        s.onerror = reject;
+        document.head.appendChild(s);
+      }).catch(() => {});
+      if (typeof L === 'undefined') {
+        console.error('Leaflet (L) is still undefined after fallback');
+        return;
+      }
+    }
+  } catch(e) {
+    console.error('Error checking/loading Leaflet', e);
+  }
+
+  const lat = parseFloat('{{ template_data.job.latitude }}');
+  const lon = parseFloat('{{ template_data.job.longitude }}');
+  
+  if (isNaN(lat) || isNaN(lon)) {
+    console.error('Invalid coordinates:', lat, lon);
+    return;
+  }
+
+  try {
+    const map = L.map('job-location-map').setView([lat, lon], 14);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(map);
+
+    const marker = L.marker([lat, lon]).addTo(map);
+    const popupContent = '<b>' + escapeHtml('{{ template_data.job.title|escapejs }}') + '</b><br>' + 
+                        escapeHtml('{{ template_data.job.company_name|escapejs }}') + '<br>' + 
+                        escapeHtml('{{ template_data.job.location|escapejs }}');
+    marker.bindPopup(popupContent).openPopup();
+
+    console.log('Job location map initialized successfully');
+  } catch(e) {
+    console.error('Error initializing job location map', e);
+  }
+
+  function escapeHtml(str) {
+    if (!str) return '';
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  }
+})();
+</script>
+{% endif %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const quickApplyBtn = document.getElementById('quick-apply-btn');

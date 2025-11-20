@@ -284,11 +284,20 @@ def map_view(request):
 
 
 def jobs_geo_json(request):
-    """Return JSON list of active jobs with basic info (no coordinates).
-
-    The frontend will geocode locations (cached client-side) to display markers.
+    """Return JSON list of active jobs with coordinates for map display.
+    
+    Excludes remote jobs since they don't have a physical location.
     """
-    jobs = Job.objects.filter(is_active=True)
+    # Only include non-remote jobs with valid coordinates
+    jobs = Job.objects.filter(
+        is_active=True,
+        is_remote=False
+    ).exclude(
+        latitude__isnull=True
+    ).exclude(
+        longitude__isnull=True
+    )
+    
     data = []
     for job in jobs:
         data.append({
@@ -298,6 +307,7 @@ def jobs_geo_json(request):
             'location': job.location,
             'latitude': job.latitude,
             'longitude': job.longitude,
+            'is_remote': job.is_remote,
             'url': reverse('jobs.show', args=[job.id])
         })
     return JsonResponse({'jobs': data})
