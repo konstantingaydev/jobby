@@ -28,7 +28,7 @@ urlpatterns = [
     # Placeholder URLs for future apps
     path('applications/', include('applications.urls')),
     path('messaging/', include('messaging.urls')),
-    # path('recommendations/', include('recommendations.urls')),
+    path('recommendations/', include('recommendations.urls')),
     # path('analytics/', include('analytics.urls')),
 ]
 urlpatterns += static(settings.MEDIA_URL,

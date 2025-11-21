@@ -149,6 +149,43 @@
         </div>
     </div>
 
+    <!-- Candidate Recommendations Section -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-user-check me-2"></i>Candidate Recommendations
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <p class="card-text">Get AI-powered candidate recommendations for your job postings. Find qualified applicants faster with our smart matching algorithm.</p>
+                    
+                    <div class="d-grid gap-2">
+                        <a href="{% url 'recommendations:all_recommendations' %}" class="btn btn-warning">
+                            <i class="fas fa-star me-2"></i>View All Recommendations
+                        </a>
+                        {% if user.posted_jobs.all %}
+                            <div class="mt-3">
+                                <h6>Recommendations by Job:</h6>
+                                <div class="list-group">
+                                    {% for job in user.posted_jobs.all|slice:":5" %}
+                                        <a href="{% url 'recommendations:job_recommendations' job.id %}" class="list-group-item list-group-item-action">
+                                            <div class="d-flex w-100 justify-content-between">
+                                                <h6 class="mb-1">{{ job.title }}</h6>
+                                                <small>{{ job.company_name }}</small>
+                                            </div>
+                                        </a>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Recent Activity Section -->
     <div class="row">
         <div class="col-12">

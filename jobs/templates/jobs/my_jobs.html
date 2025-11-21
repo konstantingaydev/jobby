@@ -49,6 +49,9 @@
                 
                 <div class="btn-group w-100" role="group">
                   <a href="{% url 'jobs.show' id=job.id %}" class="btn btn-outline-primary btn-sm">View</a>
+                  <a href="{% url 'recommendations:job_recommendations' job.id %}" class="btn btn-warning btn-sm" title="View Recommendations">
+                    <i class="fas fa-user-check"></i>
+                  </a>
                   <a href="{% url 'jobs.edit' id=job.id %}" class="btn btn-outline-secondary btn-sm">Edit</a>
                   <a href="{% url 'jobs.delete' id=job.id %}" class="btn btn-outline-danger btn-sm">Delete</a>
                 </div>

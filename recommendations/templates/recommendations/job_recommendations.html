@@ -1,0 +1,212 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ template_data.title }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="display-6 mb-1">{{ template_data.title }}</h1>
+                    <p class="text-muted mb-0">{{ job.company_name }} • {{ job.location }}</p>
+                </div>
+                <div>
+                    <a href="{% url 'recruiter:kanban_job' job.id %}" class="btn btn-outline-primary me-2">
+                        <i class="fas fa-columns"></i> View Pipeline
+                    </a>
+                    <form method="post" action="{% url 'recommendations:refresh_recommendations' job.id %}" class="d-inline">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-sync-alt"></i> Refresh Recommendations
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-4">
+                    <input type="text" name="search" class="form-control" placeholder="Search candidates..." value="{{ search_query }}">
+                </div>
+                <div class="col-md-3">
+                    <select name="status" class="form-select">
+                        <option value="">All Status</option>
+                        <option value="new" {% if status_filter == 'new' %}selected{% endif %}>New</option>
+                        <option value="viewed" {% if status_filter == 'viewed' %}selected{% endif %}>Viewed</option>
+                        <option value="contacted" {% if status_filter == 'contacted' %}selected{% endif %}>Contacted</option>
+                        <option value="applied" {% if status_filter == 'applied' %}selected{% endif %}>Applied</option>
+                        <option value="dismissed" {% if status_filter == 'dismissed' %}selected{% endif %}>Dismissed</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-search"></i> Filter
+                    </button>
+                    <a href="{% url 'recommendations:job_recommendations' job.id %}" class="btn btn-outline-secondary">
+                        <i class="fas fa-times"></i> Clear
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Recommendations List -->
+    {% if recommendations %}
+        <div class="row">
+            {% for rec in recommendations %}
+                <div class="col-md-6 mb-4">
+                    <div class="card h-100 {% if rec.status == 'new' %}border-primary{% elif rec.is_favorite %}border-warning{% endif %}">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <div>
+                                <h5 class="mb-0">
+                                    <a href="{% url 'profiles:profile_detail' rec.candidate_profile.id %}" class="text-decoration-none">
+                                        {{ rec.candidate.get_full_name|default:rec.candidate.username }}
+                                    </a>
+                                </h5>
+                                {% if rec.candidate_profile.headline %}
+                                    <small class="text-muted">{{ rec.candidate_profile.headline }}</small>
+                                {% endif %}
+                            </div>
+                            <div>
+                                <span class="badge bg-{% if rec.match_score >= 80 %}success{% elif rec.match_score >= 60 %}info{% elif rec.match_score >= 40 %}warning{% else %}secondary{% endif %}">
+                                    {{ rec.match_percentage }} Match
+                                </span>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <!-- Match Scores -->
+                            <div class="mb-3">
+                                <div class="d-flex justify-content-between mb-1">
+                                    <small>Skills Match</small>
+                                    <small><strong>{{ rec.skills_match_score|floatformat:1 }}%</strong></small>
+                                </div>
+                                <div class="progress" style="height: 5px;">
+                                    <div class="progress-bar" role="progressbar" style="width: {{ rec.skills_match_score }}%"></div>
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <div class="d-flex justify-content-between mb-1">
+                                    <small>Experience Match</small>
+                                    <small><strong>{{ rec.experience_match_score|floatformat:1 }}%</strong></small>
+                                </div>
+                                <div class="progress" style="height: 5px;">
+                                    <div class="progress-bar bg-info" role="progressbar" style="width: {{ rec.experience_match_score }}%"></div>
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <div class="d-flex justify-content-between mb-1">
+                                    <small>Location Match</small>
+                                    <small><strong>{{ rec.location_match_score|floatformat:1 }}%</strong></small>
+                                </div>
+                                <div class="progress" style="height: 5px;">
+                                    <div class="progress-bar bg-success" role="progressbar" style="width: {{ rec.location_match_score }}%"></div>
+                                </div>
+                            </div>
+
+                            <!-- Candidate Info -->
+                            <div class="mb-3">
+                                <p class="mb-1"><strong>Location:</strong> {{ rec.candidate_profile.location|default:"Not specified" }}</p>
+                                <p class="mb-1"><strong>Skills:</strong>
+                                    {% if rec.candidate_profile.skills.all %}
+                                        {% for skill in rec.candidate_profile.skills.all|slice:":5" %}
+                                            <span class="badge bg-secondary">{{ skill.name }}</span>
+                                        {% endfor %}
+                                        {% if rec.candidate_profile.skills.count > 5 %}
+                                            <span class="text-muted">+{{ rec.candidate_profile.skills.count|add:"-5" }} more</span>
+                                        {% endif %}
+                                    {% elif rec.candidate_profile.skills_text %}
+                                        <small>{{ rec.candidate_profile.skills_text|truncatewords:10 }}</small>
+                                    {% else %}
+                                        <span class="text-muted">Not specified</span>
+                                    {% endif %}
+                                </p>
+                            </div>
+
+                            <!-- Status Badge -->
+                            <div class="mb-3">
+                                <span class="badge bg-{% if rec.status == 'new' %}primary{% elif rec.status == 'viewed' %}info{% elif rec.status == 'contacted' %}warning{% elif rec.status == 'applied' %}success{% else %}secondary{% endif %}">
+                                    {{ rec.get_status_display }}
+                                </span>
+                                {% if rec.is_favorite %}
+                                    <span class="badge bg-warning text-dark">
+                                        <i class="fas fa-star"></i> Favorite
+                                    </span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="card-footer">
+                            <div class="btn-group w-100" role="group">
+                                <a href="{% url 'profiles:profile_detail' rec.candidate_profile.id %}" class="btn btn-sm btn-outline-primary">
+                                    <i class="fas fa-user"></i> View Profile
+                                </a>
+                                <a href="{% url 'messaging:start_conversation_with_user' rec.candidate.id %}" class="btn btn-sm btn-outline-info">
+                                    <i class="fas fa-envelope"></i> Message
+                                </a>
+                                <form method="post" action="{% url 'recommendations:toggle_favorite' rec.id %}" class="d-inline">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-sm {% if rec.is_favorite %}btn-warning{% else %}btn-outline-warning{% endif %}">
+                                        <i class="fas fa-star"></i>
+                                    </button>
+                                </form>
+                            </div>
+                            <div class="mt-2">
+                                <form method="post" action="{% url 'recommendations:update_status' rec.id %}">
+                                    {% csrf_token %}
+                                    <select name="status" class="form-select form-select-sm" onchange="this.form.submit()">
+                                        {% for value, label in rec.STATUS_CHOICES %}
+                                            <option value="{{ value }}" {% if rec.status == value %}selected{% endif %}>{{ label }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+
+        <!-- Pagination -->
+        {% if recommendations.has_other_pages %}
+            <nav aria-label="Recommendations pagination">
+                <ul class="pagination justify-content-center">
+                    {% if recommendations.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ recommendations.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}">Previous</a>
+                        </li>
+                    {% endif %}
+                    <li class="page-item active">
+                        <span class="page-link">Page {{ recommendations.number }} of {{ recommendations.paginator.num_pages }}</span>
+                    </li>
+                    {% if recommendations.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ recommendations.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}">Next</a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </nav>
+        {% endif %}
+    {% else %}
+        <div class="card">
+            <div class="card-body text-center py-5">
+                <i class="fas fa-user-friends fa-3x text-muted mb-3"></i>
+                <h5>No recommendations found</h5>
+                <p class="text-muted">Try refreshing recommendations or adjust your filters.</p>
+                <form method="post" action="{% url 'recommendations:refresh_recommendations' job.id %}">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-sync-alt"></i> Generate Recommendations
+                    </button>
+                </form>
+            </div>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
+
