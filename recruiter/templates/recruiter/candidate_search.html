@@ -2,22 +2,70 @@
 
 {% block content %}
 <div class="container mt-4">
-  <h1>{{ template_data.title }}</h1>
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>{{ template_data.title }}</h1>
+    {% if has_filters %}
+    <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#saveSearchModal">
+      <i class="fas fa-save"></i> Save This Search
+    </button>
+    {% endif %}
+  </div>
 
-  <form method="get" class="mb-4">
-    <div class="mb-2">
-      <label for="skills">Skills (comma or space separated)</label>
-      <input type="text" name="skills" id="skills" class="form-control" value="{{ template_data.search_terms.skills }}">
+  <!-- Saved Searches Section -->
+  {% if saved_searches %}
+  <div class="card mb-4">
+    <div class="card-header">
+      <h5 class="mb-0"><i class="fas fa-bookmark"></i> Saved Searches</h5>
     </div>
-    <div class="mb-2">
-      <label for="location">Location</label>
-      <input type="text" name="location" id="location" class="form-control" value="{{ template_data.search_terms.location }}">
+    <div class="card-body">
+      <div class="row">
+        {% for search in saved_searches %}
+        <div class="col-md-6 mb-3">
+          <div class="card">
+            <div class="card-body">
+              <h6 class="card-title">{{ search.name }}</h6>
+              <p class="card-text small text-muted">{{ search.get_criteria_display }}</p>
+              <div class="btn-group" role="group">
+                <a href="{% url 'recruiter:apply_saved_search' search.id %}" class="btn btn-sm btn-primary">
+                  <i class="fas fa-search"></i> Apply
+                </a>
+                <button type="button" class="btn btn-sm btn-danger delete-search-btn" data-search-id="{{ search.id }}" data-search-name="{{ search.name }}">
+                  <i class="fas fa-trash"></i> Delete
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
     </div>
-    <div class="mb-2">
-      <label for="projects">Projects</label>
-      <input type="text" name="projects" id="projects" class="form-control" value="{{ template_data.search_terms.projects }}">
+  </div>
+  {% endif %}
+
+  <!-- Search Form -->
+  <form method="get" class="mb-4" id="searchForm">
+    <div class="row">
+      <div class="col-md-6 mb-2">
+        <label for="skills">Skills (comma or space separated)</label>
+        <input type="text" name="skills" id="skills" class="form-control" value="{{ template_data.search_terms.skills }}">
+      </div>
+      <div class="col-md-6 mb-2">
+        <label for="location">Location</label>
+        <input type="text" name="location" id="location" class="form-control" value="{{ template_data.search_terms.location }}">
+      </div>
+      <div class="col-md-12 mb-2">
+        <label for="projects">Projects</label>
+        <input type="text" name="projects" id="projects" class="form-control" value="{{ template_data.search_terms.projects }}">
+      </div>
     </div>
-    <button class="btn btn-primary">Search</button>
+    <button type="submit" class="btn btn-primary">
+      <i class="fas fa-search"></i> Search
+    </button>
+    {% if has_filters %}
+    <a href="{% url 'recruiter:candidate_search' %}" class="btn btn-secondary">
+      <i class="fas fa-times"></i> Clear Filters
+    </a>
+    {% endif %}
   </form>
 
   <h3>Results</h3>
@@ -106,4 +154,156 @@
     <p>No candidates found.</p>
   {% endif %}
 </div>
+
+<!-- Save Search Modal -->
+<div class="modal fade" id="saveSearchModal" tabindex="-1" aria-labelledby="saveSearchModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="saveSearchModalLabel">Save Search</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <form id="saveSearchForm">
+          {% csrf_token %}
+          <div class="mb-3">
+            <label for="searchName" class="form-label">Search Name</label>
+            <input type="text" class="form-control" id="searchName" name="name" required placeholder="e.g., Senior Python Developers in NYC">
+          </div>
+          <div class="alert alert-info">
+            <strong>Current filters:</strong>
+            <ul class="mb-0" id="currentFilters"></ul>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-primary" id="saveSearchBtn">
+          <i class="fas fa-save"></i> Save Search
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // Get CSRF token
+  function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+      const cookies = document.cookie.split(';');
+      for (let i = 0; i < cookies.length; i++) {
+        const cookie = cookies[i].trim();
+        if (cookie.substring(0, name.length + 1) === (name + '=')) {
+          cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+          break;
+        }
+      }
+    }
+    return cookieValue;
+  }
+  const csrftoken = getCookie('csrftoken');
+
+  // Show current filters in modal
+  const saveSearchModal = document.getElementById('saveSearchModal');
+  if (saveSearchModal) {
+    saveSearchModal.addEventListener('show.bs.modal', function () {
+      const currentFilters = document.getElementById('currentFilters');
+      currentFilters.innerHTML = '';
+      
+      const skills = document.getElementById('skills').value;
+      const location = document.getElementById('location').value;
+      const projects = document.getElementById('projects').value;
+      
+      if (skills) currentFilters.innerHTML += `<li>Skills: ${skills}</li>`;
+      if (location) currentFilters.innerHTML += `<li>Location: ${location}</li>`;
+      if (projects) currentFilters.innerHTML += `<li>Projects: ${projects}</li>`;
+      
+      if (currentFilters.innerHTML === '') {
+        currentFilters.innerHTML = '<li>No filters set</li>';
+      }
+    });
+  }
+
+  // Save search handler
+  const saveSearchBtn = document.getElementById('saveSearchBtn');
+  if (saveSearchBtn) {
+    saveSearchBtn.addEventListener('click', function() {
+      const name = document.getElementById('searchName').value.trim();
+      if (!name) {
+        alert('Please enter a name for this search');
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append('name', name);
+      formData.append('skills', document.getElementById('skills').value);
+      formData.append('location', document.getElementById('location').value);
+      formData.append('projects', document.getElementById('projects').value);
+
+      saveSearchBtn.disabled = true;
+      saveSearchBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+
+      fetch('{% url "recruiter:save_search" %}', {
+        method: 'POST',
+        headers: {
+          'X-CSRFToken': csrftoken
+        },
+        body: formData
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          window.location.reload();
+        } else {
+          alert(data.error || 'Failed to save search');
+          saveSearchBtn.disabled = false;
+          saveSearchBtn.innerHTML = '<i class="fas fa-save"></i> Save Search';
+        }
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred while saving the search');
+        saveSearchBtn.disabled = false;
+        saveSearchBtn.innerHTML = '<i class="fas fa-save"></i> Save Search';
+      });
+    });
+  }
+
+  // Delete search handlers
+  document.querySelectorAll('.delete-search-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+      const searchId = this.dataset.searchId;
+      const searchName = this.dataset.searchName;
+      
+      if (!confirm(`Are you sure you want to delete "${searchName}"?`)) {
+        return;
+      }
+
+      fetch(`{% url 'recruiter:candidate_search' %}delete/${searchId}/`, {
+        method: 'POST',
+        headers: {
+          'X-CSRFToken': csrftoken,
+          'X-Requested-With': 'XMLHttpRequest'
+        }
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          window.location.reload();
+        } else {
+          alert('Failed to delete search');
+        }
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred while deleting the search');
+      });
+    });
+  });
+});
+</script>
 {% endblock %}

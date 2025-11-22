@@ -6,10 +6,10 @@ from django.db import models
 from profiles.models import Profile
 from django.shortcuts import get_object_or_404
 from django.http import JsonResponse, Http404
-from django.views.decorators.http import require_POST
+from django.views.decorators.http import require_POST, require_http_methods
 from django.db import transaction
 from applications.models import Application
-from .models import Stage, CandidateCard
+from .models import Stage, CandidateCard, SavedSearch
 from jobs.models import Job
 import json
 
@@ -30,6 +30,9 @@ def candidate_search(request):
     if not hasattr(request.user, 'profile') or request.user.profile.user_type != 'recruiter':
         messages.error(request, 'Access denied. Recruiter account required.')
         return redirect('home.index')
+    
+    # Get recruiter's saved searches
+    saved_searches = SavedSearch.objects.filter(recruiter=request.user)
         
     # Get all job seeker profiles that are visible to recruiters
     candidates = Profile.objects.filter(
@@ -86,6 +89,9 @@ def candidate_search(request):
     page_number = request.GET.get('page')
     candidates_page = paginator.get_page(page_number)
     
+    # Check if there are active filters
+    has_filters = any([skills_query, location_query, projects_query, search_query])
+    
     # Structure data as expected by template
     template_data = {
         'title': 'Search Candidates',
@@ -101,6 +107,8 @@ def candidate_search(request):
         'template_data': template_data,
         'candidates': candidates_page,  # Keep for backward compatibility
         'search_query': search_query,   # Keep for backward compatibility
+        'saved_searches': saved_searches,
+        'has_filters': has_filters,
     }
     return render(request, 'recruiter/candidate_search.html', context)
 
@@ -221,3 +229,78 @@ def move_card(request):
         app.save()
 
     return JsonResponse({'ok': True})
+
+
+@login_required
+@require_POST
+def save_search(request):
+    """Save current search criteria with a name."""
+    if not hasattr(request.user, 'profile') or request.user.profile.user_type != 'recruiter':
+        return JsonResponse({'error': 'Access denied'}, status=403)
+    
+    name = request.POST.get('name', '').strip()
+    if not name:
+        return JsonResponse({'error': 'Search name is required'}, status=400)
+    
+    # Get search criteria from POST
+    skills = request.POST.get('skills', '')
+    location = request.POST.get('location', '')
+    projects = request.POST.get('projects', '')
+    general_search = request.POST.get('search', '')
+    
+    # Check if at least one criteria is provided
+    if not any([skills, location, projects, general_search]):
+        return JsonResponse({'error': 'At least one search criteria is required'}, status=400)
+    
+    try:
+        # Create or update saved search
+        saved_search, created = SavedSearch.objects.update_or_create(
+            recruiter=request.user,
+            name=name,
+            defaults={
+                'skills': skills,
+                'location': location,
+                'projects': projects,
+                'general_search': general_search,
+            }
+        )
+        
+        action = 'created' if created else 'updated'
+        messages.success(request, f'Search "{name}" {action} successfully!')
+        return JsonResponse({
+            'success': True,
+            'message': f'Search "{name}" {action} successfully!',
+            'search_id': saved_search.id
+        })
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+
+@login_required
+def apply_saved_search(request, search_id):
+    """Apply a saved search by redirecting with its parameters."""
+    saved_search = get_object_or_404(SavedSearch, id=search_id, recruiter=request.user)
+    
+    # Build query string from saved parameters
+    params = saved_search.get_search_params()
+    from urllib.parse import urlencode
+    query_string = urlencode(params)
+    
+    messages.info(request, f'Applied saved search: {saved_search.name}')
+    return redirect(f"{request.path.replace(f'/apply/{search_id}/', '')}?{query_string}")
+
+
+@login_required
+@require_http_methods(["DELETE", "POST"])
+def delete_saved_search(request, search_id):
+    """Delete a saved search."""
+    saved_search = get_object_or_404(SavedSearch, id=search_id, recruiter=request.user)
+    name = saved_search.name
+    saved_search.delete()
+    
+    messages.success(request, f'Saved search "{name}" deleted successfully!')
+    
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        return JsonResponse({'success': True, 'message': f'Search "{name}" deleted'})
+    
+    return redirect('recruiter:candidate_search')

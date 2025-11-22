@@ -31,3 +31,51 @@ class CandidateCard(models.Model):
 
 	def __str__(self):
 		return f"{self.application} in {self.stage.name} (#{self.order})"
+
+
+class SavedSearch(models.Model):
+	"""Saved candidate search criteria for a recruiter."""
+	recruiter = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='saved_searches')
+	name = models.CharField(max_length=200, help_text="Name for this saved search")
+
+	# Search criteria fields
+	skills = models.CharField(max_length=500, blank=True, help_text="Comma-separated skills")
+	location = models.CharField(max_length=255, blank=True, help_text="Location filter")
+	projects = models.CharField(max_length=500, blank=True, help_text="Projects keywords")
+	general_search = models.CharField(max_length=500, blank=True, help_text="General search query")
+
+	created_at = models.DateTimeField(auto_now_add=True)
+	updated_at = models.DateTimeField(auto_now=True)
+
+	class Meta:
+		ordering = ['-created_at']
+		unique_together = (('recruiter', 'name'),)
+
+	def __str__(self):
+		return f"{self.name} ({self.recruiter.username})"
+
+	def get_search_params(self):
+		"""Return a dict of non-empty search parameters."""
+		params = {}
+		if self.skills:
+			params['skills'] = self.skills
+		if self.location:
+			params['location'] = self.location
+		if self.projects:
+			params['projects'] = self.projects
+		if self.general_search:
+			params['search'] = self.general_search
+		return params
+
+	def get_criteria_display(self):
+		"""Return a human-readable string of search criteria."""
+		parts = []
+		if self.skills:
+			parts.append(f"Skills: {self.skills}")
+		if self.location:
+			parts.append(f"Location: {self.location}")
+		if self.projects:
+			parts.append(f"Projects: {self.projects}")
+		if self.general_search:
+			parts.append(f"Search: {self.general_search}")
+		return " | ".join(parts) if parts else "No filters"

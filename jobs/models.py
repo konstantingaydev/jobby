@@ -106,6 +106,11 @@ class Job(models.Model):
     def save(self, *args, **kwargs):
         """Override save to attempt geocoding when location changes or coords are missing."""
         try:
+            # Auto-detect remote jobs based on location text
+            location_lower = (self.location or '').lower().strip()
+            if 'remote' in location_lower or location_lower in ['n/a', 'na', 'anywhere', 'virtual']:
+                self.is_remote = True
+            
             # If the job is remote, clear coordinates
             if self.is_remote:
                 self.latitude = None

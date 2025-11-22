@@ -1,9 +1,13 @@
 {% extends 'base.html' %}
+
+{% block extra_css %}
+{% if not template_data.job.is_remote and template_data.job.latitude and template_data.job.longitude %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="anonymous"/>
+{% endif %}
+{% endblock %}
+
 {% block content %}
 {% load static %}
-{% if not template_data.job.is_remote and template_data.job.latitude and template_data.job.longitude %}
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css" crossorigin="anonymous"/>
-{% endif %}
 <div class="p-3">
   <div class="container">
     <div class="row mt-3">
@@ -157,30 +161,11 @@
 
 {% block extra_js %}
 {% if not template_data.job.is_remote and template_data.job.latitude and template_data.job.longitude %}
-<script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin="anonymous"></script>
 <script>
-(async function() {
+document.addEventListener('DOMContentLoaded', function() {
   console.log('Job location map script starting');
-  try {
-    if (typeof L === 'undefined') {
-      console.warn('Leaflet (L) is undefined - attempting fallback load');
-      await new Promise((resolve, reject) => {
-        const s = document.createElement('script');
-        s.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
-        s.crossOrigin = 'anonymous';
-        s.onload = resolve;
-        s.onerror = reject;
-        document.head.appendChild(s);
-      }).catch(() => {});
-      if (typeof L === 'undefined') {
-        console.error('Leaflet (L) is still undefined after fallback');
-        return;
-      }
-    }
-  } catch(e) {
-    console.error('Error checking/loading Leaflet', e);
-  }
-
+  
   const lat = parseFloat('{{ template_data.job.latitude }}');
   const lon = parseFloat('{{ template_data.job.longitude }}');
   
@@ -188,15 +173,41 @@
     console.error('Invalid coordinates:', lat, lon);
     return;
   }
+  
+  console.log('Coordinates:', lat, lon);
 
   try {
+    if (typeof L === 'undefined') {
+      console.error('Leaflet library not loaded');
+      return;
+    }
+    
+    const mapElement = document.getElementById('job-location-map');
+    if (!mapElement) {
+      console.error('Map container element not found');
+      return;
+    }
+    
+    console.log('Initializing map...');
     const map = L.map('job-location-map').setView([lat, lon], 14);
+    
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       maxZoom: 19,
-      attribution: '&copy; OpenStreetMap contributors'
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
     }).addTo(map);
 
     const marker = L.marker([lat, lon]).addTo(map);
+    
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+    
     const popupContent = '<b>' + escapeHtml('{{ template_data.job.title|escapejs }}') + '</b><br>' + 
                         escapeHtml('{{ template_data.job.company_name|escapejs }}') + '<br>' + 
                         escapeHtml('{{ template_data.job.location|escapejs }}');
@@ -204,19 +215,9 @@
 
     console.log('Job location map initialized successfully');
   } catch(e) {
-    console.error('Error initializing job location map', e);
+    console.error('Error initializing job location map:', e);
   }
-
-  function escapeHtml(str) {
-    if (!str) return '';
-    return String(str)
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&#039;');
-  }
-})();
+});
 </script>
 {% endif %}
 <script>
