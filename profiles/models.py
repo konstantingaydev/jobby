@@ -1,8 +1,13 @@
 from django.db import models
 from django.contrib.auth.models import User
 from django.urls import reverse
+from django.db.models.signals import post_save
+from django.dispatch import receiver
+import urllib.request
+import urllib.parse
+import json
+import ssl
 
-# Create your models here.
 class Profile(models.Model):
     USER_TYPE_CHOICES = (
         ('recruiter', 'Recruiter'),
@@ -19,16 +24,20 @@ class Profile(models.Model):
     email = models.EmailField(blank=True, help_text="Email address for recruiters to contact you")
     location = models.CharField(max_length=255, blank=True, help_text='Candidate location')
     
+    # Coordinates
+    latitude = models.FloatField(null=True, blank=True)
+    longitude = models.FloatField(null=True, blank=True)
+
     # Links
     linkedin_url = models.URLField(blank=True, help_text="LinkedIn profile URL")
     github_url = models.URLField(blank=True, help_text="GitHub profile URL")
     portfolio_url = models.URLField(blank=True, help_text="Personal website or portfolio URL")
     
-    # Candidate-specific fields from job-posting branch
+    # Candidate-specific fields
     skills_text = models.TextField(blank=True, default='', help_text='Comma-separated list of skills (simple version)')
     projects_text = models.TextField(blank=True, default='', help_text='Short description/list of projects')
     
-    # Profile completion tracking
+    # Tracking
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     
@@ -46,7 +55,6 @@ class Profile(models.Model):
         help_text="Control who can see your profile"
     )
     
-    # Individual section privacy controls
     show_contact_info = models.BooleanField(default=True, help_text="Show phone and email to viewers")
     show_skills = models.BooleanField(default=True, help_text="Show skills section")
     show_education = models.BooleanField(default=True, help_text="Show education section")
@@ -59,6 +67,61 @@ class Profile(models.Model):
     def get_absolute_url(self):
         return reverse('profiles:profile_detail', kwargs={'pk': self.pk})
 
+    # --- MOVED THESE METHODS INSIDE THE CLASS ---
+    def _geocode_location(self, location):
+        """
+        Geocodes the location string to lat/long. 
+        Uses the specific User-Agent that we confirmed works in the script.
+        """
+        if not location:
+            return None
+        try:
+            base = 'https://nominatim.openstreetmap.org/search?format=json&limit=1&q='
+            url = base + urllib.parse.quote(location)
+            
+            headers = {'User-Agent': 'Jobby/1.0 (admin@jobby.example)'} 
+            req = urllib.request.Request(url, headers=headers)
+            
+            ctx = ssl.create_default_context()
+            ctx.check_hostname = False
+            ctx.verify_mode = ssl.CERT_NONE
+            
+            with urllib.request.urlopen(req, timeout=5, context=ctx) as resp:
+                data = resp.read().decode('utf-8')
+                arr = json.loads(data)
+                if arr:
+                    return float(arr[0]['lat']), float(arr[0]['lon'])
+        except Exception as e:
+            print(f"Geocoding error: {e}")
+            return None
+        return None
+
+    def save(self, *args, **kwargs):
+        """
+        Automatic trigger: If location changes, fetch new coordinates.
+        """
+        if self.location:
+            old_location = None
+            if self.pk:
+                try:
+                    old_profile = Profile.objects.get(pk=self.pk)
+                    old_location = old_profile.location
+                except Profile.DoesNotExist:
+                    pass
+            
+            if (self.location != old_location) or (self.latitude is None):
+                print(f"Auto-geocoding location for {self.user.username}...")
+                coords = self._geocode_location(self.location)
+                if coords:
+                    self.latitude, self.longitude = coords
+                    print(f"  > Saved coordinates: {self.latitude}, {self.longitude}")
+                else:
+                    print("  > Could not geocode location.")
+                    
+        super().save(*args, **kwargs)
+    # --- END OF PROFILE CLASS ---
+
+# Other models stay below Profile
 class Skill(models.Model):
     profile = models.ForeignKey(Profile, on_delete=models.CASCADE, related_name='skills')
     name = models.CharField(max_length=100)

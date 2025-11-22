@@ -11,6 +11,7 @@ from django.db import transaction
 from applications.models import Application
 from .models import Stage, CandidateCard, SavedSearch
 from jobs.models import Job
+from django.core.serializers.json import DjangoJSONEncoder
 import json
 
 @login_required
@@ -304,3 +305,46 @@ def delete_saved_search(request, search_id):
         return JsonResponse({'success': True, 'message': f'Search "{name}" deleted'})
     
     return redirect('recruiter:candidate_search')
+
+@login_required
+def candidate_map(request):
+    """Render the map view for recruiters."""
+    if not hasattr(request.user, 'profile') or request.user.profile.user_type != 'recruiter':
+        messages.error(request, 'Access denied.')
+        return redirect('home.index')
+        
+    context = {
+        'template_data': {'title': 'Candidate Map'}
+    }
+    return render(request, 'recruiter/candidate_map.html', context)
+
+@login_required
+def candidate_map_data(request):
+    """Return JSON data of candidate locations."""
+    if not hasattr(request.user, 'profile') or request.user.profile.user_type != 'recruiter':
+        return JsonResponse({'error': 'Access denied'}, status=403)
+
+    # Get candidates with valid coordinates
+    candidates = Profile.objects.filter(
+        user_type='regular',
+        latitude__isnull=False,
+        longitude__isnull=False
+    ).select_related('user')
+
+    # Optional: Filter by skills if query param exists
+    skill_query = request.GET.get('skill')
+    if skill_query:
+        candidates = candidates.filter(skills_text__icontains=skill_query)
+
+    data = []
+    for profile in candidates:
+        data.append({
+            'id': profile.id,
+            'name': profile.user.get_full_name() or profile.user.username,
+            'headline': profile.headline,
+            'lat': profile.latitude,
+            'lng': profile.longitude,
+            'url': f"/profiles/profile/{profile.id}/" # Hardcoded based on urls.py
+        })
+
+    return JsonResponse({'candidates': data}, encoder=DjangoJSONEncoder)

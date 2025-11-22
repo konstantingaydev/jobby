@@ -2,7 +2,6 @@
 
 {% block content %}
 <div class="container mt-4">
-    <!-- Header Section -->
     <div class="row mb-4">
         <div class="col-12">
             <div class="d-flex justify-content-between align-items-center">
@@ -19,7 +18,6 @@
         </div>
     </div>
 
-    <!-- Quick Stats Cards -->
     <div class="row mb-4">
         <div class="col-md-4">
             <div class="card bg-primary text-white">
@@ -70,7 +68,6 @@
         </div>
     </div>
 
-    <!-- Main Action Cards -->
     <div class="row mb-4">
         <div class="col-lg-4 mb-4">
             <div class="card h-100 shadow-sm">
@@ -115,6 +112,10 @@
                         <a href="{% url 'recruiter:candidate_search' %}" class="btn btn-success">
                             <i class="fas fa-search me-2"></i>Search Candidates
                         </a>
+                        
+                        <a href="{% url 'recruiter:candidate_map' %}" class="btn btn-outline-dark">
+                            <i class="fas fa-map-marked-alt me-2"></i>View Candidate Map
+                        </a>
                         <a href="{% url 'recruiter:candidate_search' %}?skills=python" class="btn btn-outline-success">
                             <i class="fas fa-code me-2"></i>Find Developers
                         </a>
@@ -149,7 +150,6 @@
         </div>
     </div>
 
-    <!-- Candidate Recommendations Section -->
     <div class="row mb-4">
         <div class="col-12">
             <div class="card shadow-sm">
@@ -186,7 +186,6 @@
         </div>
     </div>
 
-    <!-- Recent Activity Section -->
     <div class="row">
         <div class="col-12">
             <div class="card shadow-sm">
@@ -270,7 +269,6 @@
         </div>
     </div>
 
-    <!-- Quick Tips Section -->
     <div class="row mt-4">
         <div class="col-12">
             <div class="card border-info">
