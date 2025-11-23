@@ -216,7 +216,6 @@ def kanban_board(request, job_id=None):
     }
     return render(request, 'recruiter/kanban_board.html', context)
 
-
 @login_required
 @require_POST
 def move_card(request):

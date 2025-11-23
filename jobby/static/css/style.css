@@ -1,3 +1,30 @@
+.kanban-card.selected {
+  border: 2px solid #1976d2;
+  background: #e3f2fd;
+  box-shadow: 0 0 8px #1976d2;
+}
+/* Kanban drag and drop visual feedback */
+/* Kanban drag and drop visual feedback */
+.kanban-column {
+  min-height: 300px;
+  padding-bottom: 40px;
+  transition: background 0.2s, outline 0.2s;
+  background: #f8f9fa;
+  border-radius: 8px;
+}
+.kanban-drop-hover {
+  background: #e3f2fd !important;
+  outline: 2px dashed #1976d2;
+}
+.kanban-card.dragging {
+  opacity: 0.5;
+  box-shadow: 0 0 10px #1976d2;
+}
+/* Kanban drop target highlight */
+.kanban-drop-hover {
+  background: #e3f2fd !important;
+  outline: 2px dashed #1976d2;
+}
 body {
   font-family: 'Poppins', sans-serif;
   background-color: #F4F7F5; /* Light background color */

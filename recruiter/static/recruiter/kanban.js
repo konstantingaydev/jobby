@@ -30,50 +30,87 @@ function dragEndHandler(ev) {
   }
 }
 
+
 function dragOverHandler(ev) {
   ev.preventDefault();
   ev.dataTransfer.dropEffect = 'move';
+  ev.currentTarget.classList.add('kanban-drop-hover');
 }
+
+function dragLeaveHandler(ev) {
+  ev.currentTarget.classList.remove('kanban-drop-hover');
+}
+
 
 function dropHandler(ev) {
   ev.preventDefault();
   const stageEl = ev.currentTarget;
+  stageEl.classList.remove('kanban-drop-hover');
   const stageId = parseInt(stageEl.dataset.stageId, 10);
   const cardId = parseInt(ev.dataTransfer.getData('text/plain'), 10);
 
-  if (!cardId || !stageId) {
-    console.error('Invalid card or stage ID');
-    return;
-  }
 
-  // Compute position (end of column)
-  const toOrder = stageEl.querySelectorAll('.kanban-card').length + 1;
 
-  // Optimistically move in DOM
+
+// Kanban drag-and-drop logic
+let draggedCard = null;
+
+function handleDragStart(e) {
+  draggedCard = e.target;
+  e.dataTransfer.effectAllowed = 'move';
+  e.dataTransfer.setData('text/plain', draggedCard.dataset.cardId);
+  setTimeout(() => draggedCard.classList.add('dragging'), 0);
+}
+
+function handleDragEnd(e) {
   if (draggedCard) {
-    stageEl.appendChild(draggedCard);
-    draggedCard.style.opacity = '1';
+    draggedCard.classList.remove('dragging');
+    draggedCard = null;
   }
+}
 
-  // Call backend
-  const csrftoken = getCookie('csrftoken');
-  fetch('/recruiter/kanban/move_card/', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'X-CSRFToken': csrftoken,
-    },
-    body: JSON.stringify({ card_id: cardId, to_stage: stageId, to_order: toOrder })
-  }).then(r => r.json()).then(data => {
-    if (!data.ok) {
-      alert('Error moving card: ' + (data.error || 'unknown'));
-      window.location.reload();
-    }
-  }).catch(err => {
-    console.error('Network error:', err);
-    alert('Network error while moving card');
-    window.location.reload();
+function handleDragOver(e) {
+  e.preventDefault();
+  e.currentTarget.classList.add('kanban-drop-hover');
+}
+
+function handleDragLeave(e) {
+  e.currentTarget.classList.remove('kanban-drop-hover');
+}
+
+function handleDrop(e) {
+  e.preventDefault();
+  e.currentTarget.classList.remove('kanban-drop-hover');
+  if (!draggedCard) return;
+  e.currentTarget.appendChild(draggedCard);
+  draggedCard.classList.remove('dragging');
+  draggedCard = null;
+  // TODO: Add backend update logic here if needed
+}
+
+function initializeKanban() {
+  document.querySelectorAll('.kanban-card').forEach(card => {
+    card.setAttribute('draggable', 'true');
+    card.removeEventListener('dragstart', handleDragStart);
+    card.removeEventListener('dragend', handleDragEnd);
+    card.addEventListener('dragstart', handleDragStart);
+    card.addEventListener('dragend', handleDragEnd);
   });
+  document.querySelectorAll('.kanban-column').forEach(col => {
+    col.removeEventListener('dragover', handleDragOver);
+    col.removeEventListener('dragleave', handleDragLeave);
+    col.removeEventListener('drop', handleDrop);
+    col.addEventListener('dragover', handleDragOver);
+    col.addEventListener('dragleave', handleDragLeave);
+    col.addEventListener('drop', handleDrop);
+  });
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initializeKanban);
+} else {
+  initializeKanban();
+}
 }
 
 // Initialize drag and drop event listeners
@@ -87,6 +124,7 @@ function initializeKanban() {
   // Add event listeners to all kanban columns
   document.querySelectorAll('.kanban-column').forEach(column => {
     column.addEventListener('dragover', dragOverHandler);
+    column.addEventListener('dragleave', dragLeaveHandler);
     column.addEventListener('drop', dropHandler);
   });
 }
