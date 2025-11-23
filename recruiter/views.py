@@ -25,8 +25,49 @@ def recruiter_dashboard(request):
     return render(request, 'recruiter/recruiter_dashboard.html', {'template_data': template_data})
 
 
-def get_candidates_for_search(saved_search, limit=3):
-    """Get matching candidates for a saved search."""
+def apply_candidate_filters(candidates, skills_query=None, location_query=None, projects_query=None, search_query=None):
+    """Apply search filters to a candidate queryset. Used by both search and saved searches."""
+    # Apply skills filter
+    if skills_query:
+        skill_terms = [term.strip() for term in skills_query.split(',') if term.strip()]
+        skill_q = models.Q()
+        for term in skill_terms:
+            skill_q |= models.Q(skills__name__icontains=term) | models.Q(skills_text__icontains=term)
+        candidates = candidates.filter(skill_q).distinct()
+    
+    # Apply location filter
+    if location_query:
+        candidates = candidates.filter(location__icontains=location_query)
+    
+    # Apply projects filter
+    if projects_query:
+        candidates = candidates.filter(
+            models.Q(projects__title__icontains=projects_query) |
+            models.Q(projects__description__icontains=projects_query) |
+            models.Q(projects__technologies__icontains=projects_query) |
+            models.Q(projects_text__icontains=projects_query)
+        ).distinct()
+    
+    # Apply general search filter
+    if search_query:
+        candidates = candidates.filter(
+            models.Q(skills__name__icontains=search_query) |
+            models.Q(skills_text__icontains=search_query) |
+            models.Q(location__icontains=search_query) |
+            models.Q(projects__title__icontains=search_query) |
+            models.Q(projects__description__icontains=search_query) |
+            models.Q(projects_text__icontains=search_query) |
+            models.Q(user__first_name__icontains=search_query) |
+            models.Q(user__last_name__icontains=search_query) |
+            models.Q(headline__icontains=search_query) |
+            models.Q(bio__icontains=search_query)
+        ).distinct()
+    
+    return candidates
+
+
+def get_candidates_for_search(saved_search, limit=None):
+    """Get matching candidates for a saved search using the same filtering as the main search."""
     candidates = Profile.objects.filter(
         user_type='regular'
     ).filter(
@@ -34,40 +75,18 @@ def get_candidates_for_search(saved_search, limit=3):
         models.Q(profile_visibility='recruiters')
     ).select_related('user').prefetch_related('skills', 'projects')
     
-    # Apply filters based on saved search criteria
-    if saved_search.skills:
-        skill_terms = [term.strip() for term in saved_search.skills.split(',') if term.strip()]
-        skill_q = models.Q()
-        for term in skill_terms:
-            skill_q |= models.Q(skills__name__icontains=term) | models.Q(skills_text__icontains=term)
-        candidates = candidates.filter(skill_q).distinct()
+    # Apply the same filters as the main search view
+    candidates = apply_candidate_filters(
+        candidates,
+        skills_query=saved_search.skills,
+        location_query=saved_search.location,
+        projects_query=saved_search.projects,
+        search_query=saved_search.general_search
+    )
     
-    if saved_search.location:
-        candidates = candidates.filter(location__icontains=saved_search.location)
-    
-    if saved_search.projects:
-        candidates = candidates.filter(
-            models.Q(projects__title__icontains=saved_search.projects) |
-            models.Q(projects__description__icontains=saved_search.projects) |
-            models.Q(projects__technologies__icontains=saved_search.projects) |
-            models.Q(projects_text__icontains=saved_search.projects)
-        ).distinct()
-    
-    if saved_search.general_search:
-        candidates = candidates.filter(
-            models.Q(skills__name__icontains=saved_search.general_search) |
-            models.Q(skills_text__icontains=saved_search.general_search) |
-            models.Q(location__icontains=saved_search.general_search) |
-            models.Q(projects__title__icontains=saved_search.general_search) |
-            models.Q(projects__description__icontains=saved_search.general_search) |
-            models.Q(projects_text__icontains=saved_search.general_search) |
-            models.Q(user__first_name__icontains=saved_search.general_search) |
-            models.Q(user__last_name__icontains=saved_search.general_search) |
-            models.Q(headline__icontains=saved_search.general_search) |
-            models.Q(bio__icontains=saved_search.general_search)
-        ).distinct()
-    
-    return candidates[:limit]
+    if limit:
+        return candidates[:limit]
+    return candidates
 
 
 @login_required  
@@ -100,41 +119,14 @@ def candidate_search(request):
     projects_query = request.GET.get('projects', '')
     search_query = request.GET.get('search', '')  # Keep for general search
     
-    # Apply filters
-    if skills_query:
-        # Search in both the skills model and the legacy skills_text field
-        skill_terms = [term.strip() for term in skills_query.split(',') if term.strip()]
-        skill_q = models.Q()
-        for term in skill_terms:
-            skill_q |= models.Q(skills__name__icontains=term) | models.Q(skills_text__icontains=term)
-        candidates = candidates.filter(skill_q).distinct()
-    
-    if location_query:
-        candidates = candidates.filter(location__icontains=location_query)
-    
-    if projects_query:
-        # Search in both the projects model and the legacy projects_text field
-        candidates = candidates.filter(
-            models.Q(projects__title__icontains=projects_query) |
-            models.Q(projects__description__icontains=projects_query) |
-            models.Q(projects__technologies__icontains=projects_query) |
-            models.Q(projects_text__icontains=projects_query)
-        ).distinct()
-    
-    # Filter by general search query if provided
-    if search_query:
-        candidates = candidates.filter(
-            models.Q(skills__name__icontains=search_query) |
-            models.Q(skills_text__icontains=search_query) |
-            models.Q(location__icontains=search_query) |
-            models.Q(projects__title__icontains=search_query) |
-            models.Q(projects__description__icontains=search_query) |
-            models.Q(projects_text__icontains=search_query) |
-            models.Q(user__first_name__icontains=search_query) |
-            models.Q(user__last_name__icontains=search_query) |
-            models.Q(headline__icontains=search_query) |
-            models.Q(bio__icontains=search_query)
-        ).distinct()
+    # Apply filters using the shared function
+    candidates = apply_candidate_filters(
+        candidates,
+        skills_query=skills_query,
+        location_query=location_query,
+        projects_query=projects_query,
+        search_query=search_query
+    )
     
     # Pagination
     paginator = Paginator(candidates, 10)  # Show 10 candidates per page
