@@ -16,9 +16,18 @@ function getCookie(name) {
 let draggedCard = null;
 
 function dragStartHandler(ev) {
-  draggedCard = ev.target;
-  ev.dataTransfer.setData('text/plain', ev.target.dataset.cardId);
+  draggedCard = ev.target.closest('.kanban-card');
+  if (!draggedCard) return;
+  
+  ev.dataTransfer.setData('text/plain', draggedCard.dataset.cardId);
   ev.dataTransfer.effectAllowed = 'move';
+  draggedCard.style.opacity = '0.5';
+}
+
+function dragEndHandler(ev) {
+  if (draggedCard) {
+    draggedCard.style.opacity = '1';
+  }
 }
 
 function dragOverHandler(ev) {
@@ -32,12 +41,18 @@ function dropHandler(ev) {
   const stageId = parseInt(stageEl.dataset.stageId, 10);
   const cardId = parseInt(ev.dataTransfer.getData('text/plain'), 10);
 
+  if (!cardId || !stageId) {
+    console.error('Invalid card or stage ID');
+    return;
+  }
+
   // Compute position (end of column)
   const toOrder = stageEl.querySelectorAll('.kanban-card').length + 1;
 
   // Optimistically move in DOM
   if (draggedCard) {
     stageEl.appendChild(draggedCard);
+    draggedCard.style.opacity = '1';
   }
 
   // Call backend
@@ -55,8 +70,30 @@ function dropHandler(ev) {
       window.location.reload();
     }
   }).catch(err => {
-    console.error(err);
+    console.error('Network error:', err);
     alert('Network error while moving card');
     window.location.reload();
   });
+}
+
+// Initialize drag and drop event listeners
+function initializeKanban() {
+  // Add event listeners to all kanban cards
+  document.querySelectorAll('.kanban-card').forEach(card => {
+    card.addEventListener('dragstart', dragStartHandler);
+    card.addEventListener('dragend', dragEndHandler);
+  });
+
+  // Add event listeners to all kanban columns
+  document.querySelectorAll('.kanban-column').forEach(column => {
+    column.addEventListener('dragover', dragOverHandler);
+    column.addEventListener('drop', dropHandler);
+  });
+}
+
+// Initialize when DOM is ready
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initializeKanban);
+} else {
+  initializeKanban();
 }

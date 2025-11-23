@@ -25,7 +25,7 @@ SECRET_KEY = "django-insecure-)=k$uk_l*@c_smivtg_sqd8@$i2nq%c_o90$6s4-s6ghkrt$hl
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*']  # Configure with your PythonAnywhere domain in production
 
 
 # Application definition
@@ -57,6 +57,11 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
+
+# CSRF settings for HTTPS
+CSRF_COOKIE_SECURE = False  # Set to True if using HTTPS only
+CSRF_COOKIE_HTTPONLY = False  # Must be False for JavaScript to read CSRF token
+SESSION_COOKIE_SECURE = False  # Set to True if using HTTPS only
 
 ROOT_URLCONF = "jobby.urls"
 
@@ -125,6 +130,7 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.0/howto/static-files/
 
 STATIC_URL = "static/"
+STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field

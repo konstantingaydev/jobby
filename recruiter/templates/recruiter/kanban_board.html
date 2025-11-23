@@ -34,9 +34,9 @@
           <div class="card-header bg-light">
             <strong>{{ stage.name }}</strong>
           </div>
-          <div class="card-body p-2 kanban-column" data-stage-id="{{ stage.id }}" ondrop="dropHandler(event)" ondragover="dragOverHandler(event)">
+          <div class="card-body p-2 kanban-column" data-stage-id="{{ stage.id }}">
             {% for card in stage.cards.all %}
-              <div class="card mb-2 kanban-card" draggable="true" data-card-id="{{ card.id }}" ondragstart="dragStartHandler(event)">
+              <div class="card mb-2 kanban-card" draggable="true" data-card-id="{{ card.id }}">
                 <div class="card-body p-2">
                   <strong>{{ card.application.applicant.get_full_name }}</strong>
                   <div><small class="text-muted">{{ card.application.applicant.username }}</small></div>
