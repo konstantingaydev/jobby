@@ -25,6 +25,44 @@
             <div class="card-body">
               <h6 class="card-title">{{ search.name }}</h6>
               <p class="card-text small text-muted">{{ search.get_criteria_display }}</p>
+              
+              <!-- Preview Candidates -->
+              {% if search.preview_candidates %}
+              <div class="mb-3 mt-2">
+                <small class="text-muted d-block mb-2">
+                  <i class="fas fa-users"></i> Top Matches:
+                </small>
+                <div class="d-flex flex-column gap-2">
+                  {% for candidate in search.preview_candidates %}
+                  <div class="border-start border-3 border-info ps-2 py-1">
+                    <div class="d-flex align-items-center justify-content-between">
+                      <div class="flex-grow-1">
+                        <a href="{% url 'profiles:profile_detail' pk=candidate.pk %}" class="text-decoration-none small fw-bold">
+                          {{ candidate.user.get_full_name|default:candidate.user.username }}
+                        </a>
+                        {% if candidate.headline %}
+                        <div class="text-muted" style="font-size: 0.75rem;">{{ candidate.headline|truncatewords:8 }}</div>
+                        {% endif %}
+                        {% if candidate.location %}
+                        <div class="text-muted" style="font-size: 0.7rem;">
+                          <i class="fas fa-map-marker-alt"></i> {{ candidate.location|truncatewords:3 }}
+                        </div>
+                        {% endif %}
+                      </div>
+                      <a href="{% url 'profiles:profile_detail' pk=candidate.pk %}" class="btn btn-sm btn-outline-primary" style="font-size: 0.7rem;">
+                        View
+                      </a>
+                    </div>
+                  </div>
+                  {% endfor %}
+                </div>
+              </div>
+              {% else %}
+              <div class="alert alert-light mb-3 mt-2 py-2" style="font-size: 0.8rem;">
+                <i class="fas fa-info-circle"></i> No matching candidates found
+              </div>
+              {% endif %}
+              
               <div class="btn-group" role="group">
                 <a href="{% url 'recruiter:apply_saved_search' search.id %}" class="btn btn-sm btn-primary">
                   <i class="fas fa-search"></i> Apply

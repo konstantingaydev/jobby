@@ -25,6 +25,51 @@ def recruiter_dashboard(request):
     return render(request, 'recruiter/recruiter_dashboard.html', {'template_data': template_data})
 
 
+def get_candidates_for_search(saved_search, limit=3):
+    """Get matching candidates for a saved search."""
+    candidates = Profile.objects.filter(
+        user_type='regular'
+    ).filter(
+        models.Q(profile_visibility='public') | 
+        models.Q(profile_visibility='recruiters')
+    ).select_related('user').prefetch_related('skills', 'projects')
+    
+    # Apply filters based on saved search criteria
+    if saved_search.skills:
+        skill_terms = [term.strip() for term in saved_search.skills.split(',') if term.strip()]
+        skill_q = models.Q()
+        for term in skill_terms:
+            skill_q |= models.Q(skills__name__icontains=term) | models.Q(skills_text__icontains=term)
+        candidates = candidates.filter(skill_q).distinct()
+    
+    if saved_search.location:
+        candidates = candidates.filter(location__icontains=saved_search.location)
+    
+    if saved_search.projects:
+        candidates = candidates.filter(
+            models.Q(projects__title__icontains=saved_search.projects) |
+            models.Q(projects__description__icontains=saved_search.projects) |
+            models.Q(projects__technologies__icontains=saved_search.projects) |
+            models.Q(projects_text__icontains=saved_search.projects)
+        ).distinct()
+    
+    if saved_search.general_search:
+        candidates = candidates.filter(
+            models.Q(skills__name__icontains=saved_search.general_search) |
+            models.Q(skills_text__icontains=saved_search.general_search) |
+            models.Q(location__icontains=saved_search.general_search) |
+            models.Q(projects__title__icontains=saved_search.general_search) |
+            models.Q(projects__description__icontains=saved_search.general_search) |
+            models.Q(projects_text__icontains=saved_search.general_search) |
+            models.Q(user__first_name__icontains=saved_search.general_search) |
+            models.Q(user__last_name__icontains=saved_search.general_search) |
+            models.Q(headline__icontains=saved_search.general_search) |
+            models.Q(bio__icontains=saved_search.general_search)
+        ).distinct()
+    
+    return candidates[:limit]
+
+
 @login_required  
 def candidate_search(request):
     """Search view for recruiters to find candidates."""
@@ -32,8 +77,14 @@ def candidate_search(request):
         messages.error(request, 'Access denied. Recruiter account required.')
         return redirect('home.index')
     
-    # Get recruiter's saved searches
+    # Get recruiter's saved searches with preview candidates
     saved_searches = SavedSearch.objects.filter(recruiter=request.user)
+    
+    # Attach preview candidates to each saved search
+    saved_searches_with_previews = []
+    for search in saved_searches:
+        search.preview_candidates = get_candidates_for_search(search, limit=3)
+        saved_searches_with_previews.append(search)
         
     # Get all job seeker profiles that are visible to recruiters
     candidates = Profile.objects.filter(
@@ -108,7 +159,7 @@ def candidate_search(request):
         'template_data': template_data,
         'candidates': candidates_page,  # Keep for backward compatibility
         'search_query': search_query,   # Keep for backward compatibility
-        'saved_searches': saved_searches,
+        'saved_searches': saved_searches_with_previews,
         'has_filters': has_filters,
     }
     return render(request, 'recruiter/candidate_search.html', context)
