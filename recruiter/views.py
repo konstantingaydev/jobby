@@ -348,3 +348,51 @@ def candidate_map_data(request):
         })
 
     return JsonResponse({'candidates': data}, encoder=DjangoJSONEncoder)
+
+@login_required
+def job_applicant_map(request, job_id):
+    """Render the map view for a specific job's applicants."""
+    # FIX: Changed 'user' to 'posted_by'
+    job = get_object_or_404(Job, pk=job_id, posted_by=request.user)
+    
+    context = {
+        'template_data': {'title': f'Map: {job.title}'},
+        'job': job
+    }
+    return render(request, 'recruiter/job_applicant_map.html', context)
+
+@login_required
+def job_applicant_map_data(request, job_id):
+    """Return JSON data of applicants for a specific job using an optimized query."""
+    # 1. Get the job (Security check)
+    job = get_object_or_404(Job, pk=job_id, posted_by=request.user)
+
+    # 2. OPTIMIZED QUERY: Get Profiles directly
+    applicants = Profile.objects.filter(
+        user__job_applications__job=job,
+        latitude__isnull=False,
+        longitude__isnull=False
+    ).select_related('user').distinct()
+
+    # Debug print to server console
+    print(f"Map Data for '{job.title}': Found {applicants.count()} valid profiles.")
+
+    data = []
+    for profile in applicants:
+        # Get the specific application date for this job
+        app = profile.user.job_applications.filter(job=job).first()
+        
+        # FIX: Changed 'created_at' to 'applied_at' to match your Application model
+        applied_date = app.applied_at.strftime('%Y-%m-%d') if app else "Unknown"
+
+        data.append({
+            'id': profile.id,
+            'name': profile.user.get_full_name() or profile.user.username,
+            'headline': profile.headline,
+            'lat': profile.latitude,
+            'lng': profile.longitude,
+            'url': f"/profiles/profile/{profile.id}/",
+            'applied_at': applied_date
+        })
+    
+    return JsonResponse({'applicants': data})

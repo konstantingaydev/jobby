@@ -14,4 +14,6 @@ urlpatterns = [
     path('kanban/move_card/', views.move_card, name='kanban_move_card'),
     path('map/', views.candidate_map, name='candidate_map'),
     path('api/map-data/', views.candidate_map_data, name='candidate_map_data'),
+    path('jobs/<int:job_id>/map/', views.job_applicant_map, name='job_applicant_map'),
+    path('api/jobs/<int:job_id>/map-data/', views.job_applicant_map_data, name='job_applicant_map_data'),
 ]
